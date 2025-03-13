@@ -88,10 +88,12 @@ const loadIfc = async () => {
         class="absolute top-0 left-0 h-full w-[20%]"
       >
         <bim-panel-section label="Importing" ref="loadIfcButton">
-          {{ loadIfcButton }}
+          <!-- {{ loadIfcButton }} -->
         </bim-panel-section>
         <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
-          <div v-if="modelsList" ref="modelsList">{{ modelsList }}</div>
+          <div v-if="modelsList" ref="modelsList">
+            <!-- {{ modelsList }} -->
+          </div>
           <div v-else ref="modelsList"></div>
         </bim-panel-section>
       </bim-panel>
