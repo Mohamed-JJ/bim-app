@@ -4,40 +4,31 @@ import * as OBC from "@thatopen/components";
 import * as BUI from "@thatopen/ui";
 import * as BUIC from "@thatopen/ui-obc";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
-import {} from "@utils/"
+import { downloadFile, readFile, triggerFileUpload } from "../utils/utils";
 
 // Refs for DOM elements
 const container = ref(null);
+
 const modelsList = ref(null);
 const loadIfcButton = ref(null);
-const functionRef = ref(null);
+
+// that open docs BIM variables and dependencies
+const componentsRef = ref(null);
 const worldRef = ref(null);
 const worldsRef = ref(null);
 const last_modelRef = ref(null);
-// const buttonRef = BUIC.buttons.loadIfc({ components });
+const metadataRef = ref(null);
+const fragementsRef = ref(null);
+const fragementsIcfLoaderRef = ref(null);
 
-const handleClick = () => {
-  alert("button clicked");
-};
+async function setupEntityAttributes(model) {
+  console.log("[DEB] in");
+  const indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
+  await indexer.process(model);
 
-function triggerFileUpload() {
-  const fileInput = document.getElementById("ifc-file-input");
-  if (fileInput) {
-    console.log("clicked on upload element");
-    fileInput.click();
-  } else {
-    console.error("File input element not found");
-  }
+  console.log("[DEB] in 2");
+  // document.body.append(entityAttributesPanel);
 }
-
-function readFile(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (event) => resolve(event.target.result);
-      reader.onerror = (error) => reject(error);
-      reader.readAsArrayBuffer(file);
-    });
-  }
 
 async function handleFileUpload(event) {
   console.log("handle upload invoked");
@@ -48,19 +39,21 @@ async function handleFileUpload(event) {
   }
   console.log("the ifc file name is :", event.target.files[0].name);
   try {
-    console.log("1");
     const data = await readFile(file);
+    console.log("the awaited data", data);
     const buffer = new Uint8Array(data);
-    const model = await fragmentIfcLoader.load(buffer);
-    world.scene.three.add(model);
+    const model = await fragementsIcfLoaderRef.value.load(buffer);
+    console.log("1");
+    worldRef.value.scene.three.add(model);
 
     console.log("2");
     await setupEntityAttributes(model);
 
-    metadata = model.getLocalProperties();
-    last_model = model;
-    console.log("[INIT Load] metadata : ", metadata);
-    console.log("[INIT Load] model : ", last_model);
+    metadataRef.value = model.getLocalProperties();
+    console.log("the model", model);
+    last_modelRef.value = model;
+    console.log("[INIT Load] metadata : ", metadataRef.value);
+    console.log("[INIT Load] model : ", last_modelRef);
     console.log("3");
   } catch (error) {
     console.error("Error loading IFC file:", error);
@@ -73,8 +66,9 @@ const exportGLTF = () => {
   const exporter = new GLTFExporter();
   //Setup the last model's properties
   var tmpo = [];
+  console.log("last model data", last_modelRef.value);
   last_modelRef.value.traverse((el) => {
-    console.log("smsm", e1);
+    console.log("smsm", el);
     tmpo.push(el);
     // var props = fragments.
   });
@@ -115,6 +109,9 @@ const exportGLTF = () => {
   );
 };
 
+function disposeFragments() {
+  fragments.dispose();
+}
 
 // Initialize the 3D scene and UI
 onMounted(async () => {
@@ -151,6 +148,18 @@ onMounted(async () => {
   // Initialize components
   components.init();
 
+  world.camera.controls.setLookAt(12, 6, 8, 0, 0, -10);
+
+  world.scene.setup();
+
+  const fragments = components.get(OBC.FragmentsManager);
+  const fragmentIfcLoader = components.get(OBC.IfcLoader);
+
+  await fragmentIfcLoader.setup();
+
+  var last_model; // : FragmentsGroup;
+  var metadata;
+
   // Set up the IFC loader
   const ifcLoader = components.get(OBC.IfcLoader);
   await ifcLoader.setup();
@@ -176,8 +185,13 @@ onMounted(async () => {
   modelsList.value.appendChild(modelsListElement);
   loadIfcButton.value.appendChild(loadIfcBtn);
 
+  // console.log(loadIfcBtn, loadIfcButton);
+
+  componentsRef.value = components;
   worldRef.value = world;
   worldsRef.value = worlds;
+  fragementsRef.value = fragments;
+  fragementsIcfLoaderRef.value = fragmentIfcLoader;
 });
 
 // Function to load an IFC file
@@ -196,9 +210,24 @@ const loadIfc = async () => {
         label="IFC Models"
         class="absolute top-0 left-0 h-full w-[20%]"
       >
-        <!-- <bim-panel-section label="Importing" ref="loadIfcButton">
-        </bim-panel-section> -->
-        <bim-panel-section label="Importing">
+        <bim-panel-section label="Importing" ref="loadIfcButton">
+        </bim-panel-section>
+
+        <!-- {{ loadIfcButton }} -->
+        <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
+          <div v-if="modelsList" ref="modelsList">
+            <!-- {{ modelsList }} -->
+          </div>
+          <div v-else ref="modelsList"></div>
+        </bim-panel-section>
+        <bim-panel-section>
+          <bim-button label="Export GLTF" @click="exportGLTF"></bim-button>
+        </bim-panel-section>
+        <LoadIfcButton />
+        <bim-panel-section
+          label="costum Importing"
+          class="border-2 border-white"
+        >
           <bim-button label="Load IFC" @click="triggerFileUpload">
             <input
               type="file"
@@ -208,16 +237,6 @@ const loadIfc = async () => {
               @change="handleFileUpload"
             />
           </bim-button>
-        </bim-panel-section>
-        <!-- {{ loadIfcButton }} -->
-        <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
-          <div v-if="modelsList" ref="modelsList">
-            <!-- {{ modelsList }} -->
-          </div>
-          <div v-else ref="modelsList"></div>
-        </bim-panel-section>
-        <bim-panel-section>
-          <bim-button label="Export GLTF" @click="exportGLTF"> </bim-button>
         </bim-panel-section>
       </bim-panel>
     </div>
