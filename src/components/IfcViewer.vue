@@ -6,6 +6,7 @@ import * as BUIC from "@thatopen/ui-obc";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { downloadFile, readFile, triggerFileUpload } from "../utils/utils";
 import { NButton } from "naive-ui";
+import LoadIfcButton from "./LoadIfcButton.vue";
 
 // Refs for DOM elements
 const container = ref(null);
@@ -216,6 +217,7 @@ const loadIfc = async () => {
         <bim-panel-section label="Importing" ref="loadIfcButton" class="hidden">
         </bim-panel-section>
 
+        <!-- {{ loadIfcButton }} -->
         <bim-panel-section label="costum Importing" class="">
           <NButton
             text-color="white"
@@ -230,27 +232,16 @@ const loadIfc = async () => {
               @change="handleFileUpload"
             />
           </NButton>
-          <!-- <bim-button label="Load IFC" @click="triggerFileUpload">
-            <input
-              type="file"
-              id="ifc-file-input"
-              accept=".ifc"
-              style="display: none"
-              @change="handleFileUpload"
-            />
-          </bim-button>-->
         </bim-panel-section>
-        <!-- {{ loadIfcButton }} -->
         <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
-          <div v-if="modelsList" ref="modelsList">
-            <!-- {{ modelsList }} -->
-          </div>
-          <div v-else ref="modelsList"></div>
+          <div ref="modelsList"></div>
+          <!-- <div v-else ref="modelsList"></div> -->
         </bim-panel-section>
         <bim-panel-section>
-          <bim-button label="Export GLTF" @click="exportGLTF"></bim-button>
+          <NButton @click="exportGLTF" text-color="white" color="#2e3338"
+            >Export GLTF</NButton
+          >
         </bim-panel-section>
-        <LoadIfcButton />
       </bim-panel>
     </div>
   </div>
