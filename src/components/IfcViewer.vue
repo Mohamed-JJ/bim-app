@@ -210,9 +210,23 @@ const loadIfc = async () => {
         label="IFC Models"
         class="absolute top-0 left-0 h-full w-[20%]"
       >
-        <bim-panel-section label="Importing" ref="loadIfcButton">
-        </bim-panel-section>
-
+      <!-- <bim-panel-section label="Importing" ref="loadIfcButton">
+      </bim-panel-section> -->
+      
+      <bim-panel-section
+        label="costum Importing"
+        class=""
+      >
+        <bim-button label="Load IFC" @click="triggerFileUpload">
+          <input
+            type="file"
+            id="ifc-file-input"
+            accept=".ifc"
+            style="display: none"
+            @change="handleFileUpload"
+          />
+        </bim-button>
+      </bim-panel-section>
         <!-- {{ loadIfcButton }} -->
         <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
           <div v-if="modelsList" ref="modelsList">
@@ -224,20 +238,6 @@ const loadIfc = async () => {
           <bim-button label="Export GLTF" @click="exportGLTF"></bim-button>
         </bim-panel-section>
         <LoadIfcButton />
-        <bim-panel-section
-          label="costum Importing"
-          class="border-2 border-white"
-        >
-          <bim-button label="Load IFC" @click="triggerFileUpload">
-            <input
-              type="file"
-              id="ifc-file-input"
-              accept=".ifc"
-              style="display: none"
-              @change="handleFileUpload"
-            />
-          </bim-button>
-        </bim-panel-section>
       </bim-panel>
     </div>
   </div>
