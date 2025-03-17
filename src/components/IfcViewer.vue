@@ -179,11 +179,13 @@ onMounted(async () => {
     actions: { download: false },
   });
 
-  console.log("the model list is, ", modelsListElement);
+  // console.log("the model list is, ", modelsListElement);
 
   // Append the models list to the DOM
   modelsList.value.appendChild(modelsListElement);
   loadIfcButton.value.appendChild(loadIfcBtn);
+
+  console.log(loadIfcBtn.className, loadIfcButton)
 
   // console.log(loadIfcBtn, loadIfcButton);
 
@@ -210,8 +212,8 @@ const loadIfc = async () => {
         label="IFC Models"
         class="absolute top-0 left-0 h-full w-[20%]"
       >
-      <!-- <bim-panel-section label="Importing" ref="loadIfcButton">
-      </bim-panel-section> -->
+      <bim-panel-section label="Importing" ref="loadIfcButton" class="hidden">
+      </bim-panel-section>
       
       <bim-panel-section
         label="costum Importing"
