@@ -1,255 +1,220 @@
-<script setup>
+<template>
+  <div id="container" ref="container"></div>
+  <div v-if="panel" ref="panel"></div>
+  <div v-if="entityAttributesPanel" ref="entityAttributesPanel"></div>
+</template>
+
+<script lang="ts" setup>
 import { ref, onMounted } from "vue";
-import * as OBC from "@thatopen/components";
+import * as WEBIFC from "web-ifc";
 import * as BUI from "@thatopen/ui";
-import * as BUIC from "@thatopen/ui-obc";
+import Stats from "stats.js";
+import * as OBC from "@thatopen/components";
+import * as CUI from "@thatopen/ui-obc";
+import * as OBF from "@thatopen/components-front";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
-import { downloadFile, readFile, triggerFileUpload } from "../utils/utils";
-import { NButton } from "naive-ui";
-import LoadIfcButton from "./LoadIfcButton.vue";
+import { FragmentsGroup } from "@thatopen/fragments";
 
-// Refs for DOM elements
-const container = ref(null);
+// Refs
+const container = ref<HTMLElement | null>(null);
+const panel = ref<HTMLElement | null>(null);
+const entityAttributesPanel = ref<HTMLElement | null>(null);
 
-const modelsList = ref(null);
-const loadIfcButton = ref(null);
+// State
+const components = new OBC.Components();
+const worlds = components.get(OBC.Worlds);
+const world = worlds.create<OBC.SimpleScene, OBC.SimpleCamera, OBC.SimpleRenderer>();
+const fragments = components.get(OBC.FragmentsManager);
+const fragmentIfcLoader = components.get(OBC.IfcLoader);
+const stats = new Stats();
+let lastModel: FragmentsGroup | null = null;
+let metadata: any = null;
 
-// that open docs BIM variables and dependencies
-const componentsRef = ref(null);
-const worldRef = ref(null);
-const worldsRef = ref(null);
-const last_modelRef = ref(null);
-const metadataRef = ref(null);
-const fragementsRef = ref(null);
-const fragementsIcfLoaderRef = ref(null);
+// Excluded categories
+const excludedCats = [
+  WEBIFC.IFCTENDONANCHOR,
+  WEBIFC.IFCREINFORCINGBAR,
+  WEBIFC.IFCREINFORCINGELEMENT,
+];
 
-async function setupEntityAttributes(model) {
-  console.log("[DEB] in");
-  const indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
-  await indexer.process(model);
+// Setup
+onMounted(async () => {
+  if (!container.value) return;
 
-  console.log("[DEB] in 2");
-  // document.body.append(entityAttributesPanel);
+  // Initialize components
+  BUI.Manager.init();
+  const rendererComponent = new OBC.SimpleRenderer(components, container.value);
+  const cameraComponent = new OBC.SimpleCamera(components);
+  world.scene = new OBC.SimpleScene(components);
+  world.renderer = rendererComponent;
+  world.camera = cameraComponent;
+
+  window.addEventListener("resize", () => {
+    rendererComponent.resize();
+    cameraComponent.updateAspect();
+  });
+
+  components.init();
+  world.camera.controls.setLookAt(12, 6, 8, 0, 0, -10);
+  world.scene.setup();
+
+  const grids = components.get(OBC.Grids);
+  grids.create(world);
+  world.scene.three.background = null;
+
+  await fragmentIfcLoader.setup();
+  excludedCats.forEach((cat) => fragmentIfcLoader.settings.excludedCategories.add(cat));
+  fragmentIfcLoader.settings.webIfc.COORDINATE_TO_ORIGIN = true;
+
+  // Stats.js setup
+  stats.showPanel(2);
+  document.body.append(stats.dom);
+  stats.dom.style.left = "0px";
+  stats.dom.style.zIndex = "unset";
+  world.renderer.onBeforeUpdate.add(() => stats.begin());
+  world.renderer.onAfterUpdate.add(() => stats.end());
+
+  // Load IFC
+  await loadIfc();
+
+  // Create UI panels
+  if (panel.value) panel.value.append(createPanel());
+  if (entityAttributesPanel.value) entityAttributesPanel.value.append(createEntityAttributesPanel());
+});
+
+// Functions
+async function loadIfc() {
+  const file = await fetch("ifc/archi.ifc");
+  const data = await file.arrayBuffer();
+  const buffer = new Uint8Array(data);
+  const model = await fragmentIfcLoader.load(buffer);
+  world.scene.three.add(model);
+  lastModel = model;
+  metadata = model.getLocalProperties();
+  console.log("[INIT Load] metadata:", metadata);
+  console.log("[INIT Load] model:", lastModel);
 }
 
-async function handleFileUpload(event) {
-  console.log("handle upload invoked");
-  const file = event?.target?.files[0];
+function triggerFileUpload() {
+  const fileInput = document.getElementById("ifc-file-input");
+  if (fileInput) fileInput.click();
+}
+
+async function handleFileUpload(event: Event) {
+  const file = (event.target as HTMLInputElement)?.files?.[0];
   if (!file) {
     alert("No file selected!");
     return;
   }
-  console.log("the ifc file name is :", event.target.files[0].name);
+
   try {
     const data = await readFile(file);
-    console.log("the awaited data", data);
     const buffer = new Uint8Array(data);
-    const model = await fragementsIcfLoaderRef.value.load(buffer);
-    console.log("1");
-    worldRef.value.scene.three.add(model);
-
-    console.log("2");
+    const model = await fragmentIfcLoader.load(buffer);
+    world.scene.three.add(model);
     await setupEntityAttributes(model);
-
-    metadataRef.value = model.getLocalProperties();
-    console.log("the model", model);
-    last_modelRef.value = model;
-    console.log("[INIT Load] metadata : ", metadataRef.value);
-    console.log("[INIT Load] model : ", last_modelRef);
-    console.log("3");
+    metadata = model.getLocalProperties();
+    lastModel = model;
+    console.log("[INIT Load] metadata:", metadata);
+    console.log("[INIT Load] model:", lastModel);
   } catch (error) {
     console.error("Error loading IFC file:", error);
     alert("Failed to load IFC file.");
   }
 }
 
-const exportGLTF = () => {
-  // alert("export clicked");
+async function exportGLTF() {
+  if (!lastModel) return;
+
   const exporter = new GLTFExporter();
-  //Setup the last model's properties
-  var tmpo = [];
-  last_modelRef.value.traverse((el) => {
-    console.log("smsm", el);
-    tmpo.push(el);
-    // var props = fragments.
-  });
-
-  console.log("[INIT Load] Traverse ,", tmpo);
-
-  var tmpb = [];
-  var tmpc = [];
-  last_modelRef.value.items.map((el) => {
-    tmpb.push(el);
-    tmpc.push(el.exportData());
-  });
-
-  console.log("[INIT Load] items ,", tmpb);
-  console.log("[INIT Load] extractData,", tmpc);
-
   exporter.parse(
-    worldRef.value.scene.three,
+    world.scene.three,
     (gltf) => {
-      // Save GLTF
-      // gltf["extras"] = metadata;
       if (gltf instanceof ArrayBuffer) {
         const glbBlob = new Blob([gltf], { type: "model/gltf-binary" });
         downloadFile(glbBlob, "model.glb");
-
-        // Save Metadata
       }
-      // const metadataBlob = new Blob([JSON.stringify(metadata, null, 2)], { type: "application/json" });
-      // downloadFile(metadataBlob, "metadata.json");
     },
-    (err) => {
-      console.log("[EXPORT GLTF ERR]  err ", err);
-    },
-    {
-      trs: true,
-      binary: true,
-    }
+    (err) => console.error("[EXPORT GLTF ERR]", err),
+    { trs: true, binary: true }
   );
-};
+}
 
 function disposeFragments() {
   fragments.dispose();
 }
 
-// Initialize the 3D scene and UI
-onMounted(async () => {
-  // Initialize the UI library
-  BUI.Manager.init();
+function downloadFile(blob: Blob, filename: string) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+}
 
-  // Set up the components
-  const components = new OBC.Components();
-
-  // Set up the scene
-  const worlds = components.get(OBC.Worlds);
-  const world = worlds.create();
-
-  const sceneComponent = new OBC.SimpleScene(components);
-  sceneComponent.setup();
-  world.scene = sceneComponent;
-
-  const rendererComponent = new OBC.SimpleRenderer(components, container.value);
-  world.renderer = rendererComponent;
-
-  const cameraComponent = new OBC.SimpleCamera(components);
-  world.camera = cameraComponent;
-
-  // Handle window resize
-  window.addEventListener("resize", () => {
-    rendererComponent.resize();
-    cameraComponent.updateAspect();
+function readFile(file: File): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => resolve(event.target?.result as ArrayBuffer);
+    reader.onerror = (error) => reject(error);
+    reader.readAsArrayBuffer(file);
   });
+}
 
-  // Add a grid to the scene
-  const viewerGrids = components.get(OBC.Grids);
-  viewerGrids.create(world);
+async function setupEntityAttributes(model: FragmentsGroup) {
+  const indexer = components.get(OBC.IfcRelationsIndexer);
+  await indexer.process(model);
+}
 
-  // Initialize components
-  components.init();
-
-  world.camera.controls.setLookAt(12, 6, 8, 0, 0, -10);
-
-  world.scene.setup();
-
-  const fragments = components.get(OBC.FragmentsManager);
-  const fragmentIfcLoader = components.get(OBC.IfcLoader);
-
-  await fragmentIfcLoader.setup();
-
-  var last_model; // : FragmentsGroup;
-  var metadata;
-
-  // Set up the IFC loader
-  const ifcLoader = components.get(OBC.IfcLoader);
-  await ifcLoader.setup();
-
-  // Set up the fragments manager
-  const fragmentsManager = components.get(OBC.FragmentsManager);
-  fragmentsManager.onFragmentsLoaded.add((model) => {
-    if (world.scene) world.scene.three.add(model);
-  });
-
-  const [loadIfcBtn] = BUIC.buttons.loadIfc({ components });
-
-  // Create the models list component
-  const [modelsListElement] = BUIC.tables.modelsList({
-    components,
-    tags: { schema: true, viewDefinition: false },
-    actions: { download: false },
-  });
-
-  // console.log("the model list is, ", modelsListElement);
-
-  // Append the models list to the DOM
-  modelsList.value.appendChild(modelsListElement);
-  loadIfcButton.value.appendChild(loadIfcBtn);
-
-  console.log(loadIfcBtn.className, loadIfcButton);
-
-  // console.log(loadIfcBtn, loadIfcButton);
-
-  componentsRef.value = components;
-  worldRef.value = world;
-  worldsRef.value = worlds;
-  fragementsRef.value = fragments;
-  fragementsIcfLoaderRef.value = fragmentIfcLoader;
-});
-
-// Function to load an IFC file
-const loadIfc = async () => {
-  // Add your IFC loading logic here
-  console.log("Loading IFC file...");
-};
-</script>
-
-<template>
-  <div>
-    <!-- Container for the 3D viewport -->
-    <div id="container" ref="container" class="relative">
-      <!-- BIM Panel for IFC Models -->
-      <bim-panel
-        label="IFC Models"
-        class="absolute top-0 left-0 h-full w-[20%]"
-      >
-        <bim-panel-section label="Importing" ref="loadIfcButton" class="hidden">
-        </bim-panel-section>
-
-        <!-- {{ loadIfcButton }} -->
-        <bim-panel-section label="costum Importing" class="">
-          <NButton
-            text-color="white"
-            color="#2e3338"
-            v-on:click="triggerFileUpload"
-            >Load IFC
-            <input
-              type="file"
-              id="ifc-file-input"
-              accept=".ifc"
-              style="display: none"
-              @change="handleFileUpload"
-            />
-          </NButton>
-        </bim-panel-section>
-        <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
-          <div ref="modelsList"></div>
-          <!-- <div v-else ref="modelsList"></div> -->
-        </bim-panel-section>
-        <bim-panel-section>
-          <NButton @click="exportGLTF" text-color="white" color="#2e3338"
-            >Export GLTF</NButton
-          >
+function createPanel() {
+  return BUI.Component.create<BUI.PanelSection>(() => {
+    return BUI.html`
+      <bim-panel active label="IFC Loader Tutorial" class="options-menu">
+        <bim-panel-section collapsed label="Controls">
+          <bim-button label="Load IFC" @click="${triggerFileUpload}"></bim-button>
+          <input type="file" id="ifc-file-input" accept=".ifc" style="display: none;" @change="${handleFileUpload}" />
+          <bim-button label="Export GLTF" @click="${exportGLTF}"></bim-button>
+          <bim-button label="Dispose fragments" @click="${disposeFragments}"></bim-button>
         </bim-panel-section>
       </bim-panel>
-    </div>
-  </div>
-</template>
+    `;
+  });
+}
 
-<style scoped>
+function createEntityAttributesPanel() {
+  const [attributesTable, updateAttributesTable] = CUI.tables.entityAttributes({
+    components,
+    fragmentIdMap: {},
+    tableDefinition: {},
+    attributesToInclude: () => [
+      "Name",
+      "ContainedInStructure",
+      "HasProperties",
+      "HasPropertySets",
+      (name: string) => name.includes("Value"),
+      (name: string) => name.startsWith("Material"),
+      (name: string) => name.startsWith("Relating"),
+      (name: string) => {
+        const ignore = ["IsGroupedBy", "IsDecomposedBy"];
+        return name.startsWith("Is") && !ignore.includes(name);
+      },
+    ],
+  });
+
+  return BUI.Component.create<BUI.PanelSection>(() => {
+    return BUI.html`
+      <bim-panel style="position: fixed; max-height: 70vh; top: 20px; left: 5px;">
+        <bim-panel-section label="Entity Attributes" fixed>
+          ${attributesTable}
+        </bim-panel-section>
+      </bim-panel>
+    `;
+  });
+}
+</script>
+
+<style>
 #container {
   width: 100%;
   height: 100vh;
-  position: relative;
 }
 </style>

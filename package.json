@@ -15,6 +15,8 @@
     "@thatopen/fragments": "^2.4.0",
     "@thatopen/ui": "^2.4.2",
     "@thatopen/ui-obc": "^2.4.1",
+    "@types/stats": "^0.16.30",
+    "stats.js": "^0.17.0",
     "tailwindcss": "^4.0.14",
     "three": "^0.160.1",
     "vue": "^3.5.13",
