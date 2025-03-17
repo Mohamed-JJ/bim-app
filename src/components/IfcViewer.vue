@@ -5,6 +5,7 @@ import * as BUI from "@thatopen/ui";
 import * as BUIC from "@thatopen/ui-obc";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { downloadFile, readFile, triggerFileUpload } from "../utils/utils";
+import { NButton } from "naive-ui";
 
 // Refs for DOM elements
 const container = ref(null);
@@ -185,7 +186,7 @@ onMounted(async () => {
   modelsList.value.appendChild(modelsListElement);
   loadIfcButton.value.appendChild(loadIfcBtn);
 
-  console.log(loadIfcBtn.className, loadIfcButton)
+  console.log(loadIfcBtn.className, loadIfcButton);
 
   // console.log(loadIfcBtn, loadIfcButton);
 
@@ -212,23 +213,33 @@ const loadIfc = async () => {
         label="IFC Models"
         class="absolute top-0 left-0 h-full w-[20%]"
       >
-      <bim-panel-section label="Importing" ref="loadIfcButton" class="hidden">
-      </bim-panel-section>
-      
-      <bim-panel-section
-        label="costum Importing"
-        class=""
-      >
-        <bim-button label="Load IFC" @click="triggerFileUpload">
-          <input
-            type="file"
-            id="ifc-file-input"
-            accept=".ifc"
-            style="display: none"
-            @change="handleFileUpload"
-          />
-        </bim-button>
-      </bim-panel-section>
+        <bim-panel-section label="Importing" ref="loadIfcButton" class="hidden">
+        </bim-panel-section>
+
+        <bim-panel-section label="costum Importing" class="">
+          <NButton
+            text-color="white"
+            color="#2e3338"
+            v-on:click="triggerFileUpload"
+            >Load IFC
+            <input
+              type="file"
+              id="ifc-file-input"
+              accept=".ifc"
+              style="display: none"
+              @change="handleFileUpload"
+            />
+          </NButton>
+          <!-- <bim-button label="Load IFC" @click="triggerFileUpload">
+            <input
+              type="file"
+              id="ifc-file-input"
+              accept=".ifc"
+              style="display: none"
+              @change="handleFileUpload"
+            />
+          </bim-button>-->
+        </bim-panel-section>
         <!-- {{ loadIfcButton }} -->
         <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
           <div v-if="modelsList" ref="modelsList">
