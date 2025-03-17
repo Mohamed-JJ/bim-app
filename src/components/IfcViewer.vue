@@ -62,7 +62,7 @@ async function handleFileUpload(event) {
 }
 
 const exportGLTF = () => {
-  alert("export clicked");
+  // alert("export clicked");
   const exporter = new GLTFExporter();
   //Setup the last model's properties
   var tmpo = [];
