@@ -68,7 +68,6 @@ const exportGLTF = () => {
   const exporter = new GLTFExporter();
   //Setup the last model's properties
   var tmpo = [];
-  console.log("last model data", last_modelRef.value);
   last_modelRef.value.traverse((el) => {
     console.log("smsm", el);
     tmpo.push(el);
