@@ -197,21 +197,8 @@
     });
   
     entityAttributesPanel.value.appendChild(panelContent);
-  
-    appGrid.value.layouts = {
-      main: {
-        template: `
-          "viewport" 1fr
-          "entityAttributesPanel" 1fr
-        `,
-        elements: { entityAttributesPanel: entityAttributesPanel.value, viewport: viewport.value },
-      },
-    };
-  
-    appGrid.value.layout = "main";
   });
   </script>
   
   <style scoped>
-  /* Add any specific styles here */
   </style>

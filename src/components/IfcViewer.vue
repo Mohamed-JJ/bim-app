@@ -1,108 +1,154 @@
+<template>
+  <div class="w-screen h-screen">
+    <div id="container" ref="container" class="relative w-full h-full">
+      <!-- BIM Panel for IFC Models -->
+      <bim-panel label="IFC Models" class="absolute top-0 left-0 h-full w-[20%]">
+        <bim-panel-section label="Custom Importing">
+          <NButton text-color="white" color="#2e3338" @click="triggerFileUpload">
+            Load IFC
+            <input
+              type="file"
+              id="ifc-file-input"
+              accept=".ifc"
+              style="display: none"
+              @change="handleFileUpload"
+            />
+          </NButton>
+        </bim-panel-section>
+        <!-- <bim-panel-section label="Sample Model">
+          <NButton text-color="white" color="#2e3338" @click="loadSampleModel">
+            Load Sample Model
+          </NButton>
+        </bim-panel-section> -->
+        <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
+          <div ref="modelsList"></div>
+        </bim-panel-section>
+        <bim-panel-section>
+          <NButton @click="exportGLTF" text-color="white" color="#2e3338">
+            Export GLTF
+          </NButton>
+        </bim-panel-section>
+      </bim-panel>
+      
+      <!-- Entity Attributes Panel -->
+      <bim-panel ref="entityAttributesPanel" class="absolute top-0 right-0"></bim-panel>
+    </div>
+  </div>
+</template>
+
 <script setup>
 import { ref, onMounted } from "vue";
+import * as WEBIFC from "web-ifc";
 import * as OBC from "@thatopen/components";
+import * as OBCF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui";
 import * as BUIC from "@thatopen/ui-obc";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
-import { downloadFile, readFile, triggerFileUpload } from "../utils/utils";
 import { NButton } from "naive-ui";
-import LoadIfcButton from "./LoadIfcButton.vue";
+
+// Utility functions
+const downloadFile = (blob, fileName) => {
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(link.href);
+};
+
+const readFile = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = (e) => reject(e);
+    reader.readAsArrayBuffer(file);
+  });
+};
+
+const triggerFileUpload = () => {
+  document.getElementById('ifc-file-input').click();
+};
 
 // Refs for DOM elements
 const container = ref(null);
-
 const modelsList = ref(null);
-const loadIfcButton = ref(null);
+const entityAttributesPanel = ref(null);
 
-// that open docs BIM variables and dependencies
+// ThatOpen BIM variables and dependencies
 const componentsRef = ref(null);
-const firstFile = ref(null)
 const worldRef = ref(null);
-const worldsRef = ref(null);
+const highlighterRef = ref(null);
 const last_modelRef = ref(null);
-const metadataRef = ref(null);
-const fragementsRef = ref(null);
-const fragementsIcfLoaderRef = ref(null);
+const attributesUpdateRef = ref(null);
 
-async function setupEntityAttributes(model) {
-  console.log("[DEB] in");
-  const indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
-  await indexer.process(model);
-
-  console.log("[DEB] in 2");
-  // document.body.append(entityAttributesPanel);
-}
-
+// Handle file upload
 async function handleFileUpload(event) {
-  console.log("handle upload invoked");
   const file = event?.target?.files[0];
   if (!file) {
     alert("No file selected!");
     return;
   }
-  console.log("the ifc file name is :", event.target.files[0].name);
+
   try {
     const data = await readFile(file);
-    console.log("the awaited data", data);
     const buffer = new Uint8Array(data);
-    const model = await fragementsIcfLoaderRef.value.load(buffer);
-    console.log("1");
-    worldRef.value.scene.three.add(model);
-
-    console.log("2");
-    await setupEntityAttributes(model);
-
-    metadataRef.value = model.getLocalProperties();
-    console.log("the model", model);
-    last_modelRef.value = model;
-    console.log("[INIT Load] metadata : ", metadataRef.value);
-    console.log("[INIT Load] model : ", last_modelRef);
-    console.log("3");
+    await loadIFCModel(buffer, file.name);
   } catch (error) {
     console.error("Error loading IFC file:", error);
     alert("Failed to load IFC file.");
   }
 }
 
+// Load sample model
+async function loadSampleModel() {
+  try {
+    const file = await fetch("https://thatopen.github.io/engine_ui-components/resources/small.ifc");
+    const buffer = await file.arrayBuffer();
+    const typedArray = new Uint8Array(buffer);
+    await loadIFCModel(typedArray, "sample.ifc");
+  } catch (error) {
+    console.error("Error loading sample IFC file:", error);
+    alert("Failed to load sample IFC file.");
+  }
+}
+
+// Common function to load IFC models
+async function loadIFCModel(buffer, name) {
+  const ifcLoader = componentsRef.value.get(OBC.IfcLoader);
+  const model = await ifcLoader.load(buffer, { name });
+  worldRef.value.scene.three.add(model);
+
+  // Process entity relations
+  await setupEntityAttributes(model);
+  
+  last_modelRef.value = model;
+}
+
+// Setup entity attributes
+async function setupEntityAttributes(model) {
+  const indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
+  await indexer.process(model);
+}
+
+// Export to GLTF
 const exportGLTF = () => {
-  // alert("export clicked");
+  if (!last_modelRef.value) {
+    alert("No model loaded to export!");
+    return;
+  }
+
   const exporter = new GLTFExporter();
-  //Setup the last model's properties
-  var tmpo = [];
-  last_modelRef.value.traverse((el) => {
-    console.log("smsm", el);
-    tmpo.push(el);
-    // var props = fragments.
-  });
-
-  console.log("[INIT Load] Traverse ,", tmpo);
-
-  var tmpb = [];
-  var tmpc = [];
-  last_modelRef.value.items.map((el) => {
-    tmpb.push(el);
-    tmpc.push(el.exportData());
-  });
-
-  console.log("[INIT Load] items ,", tmpb);
-  console.log("[INIT Load] extractData,", tmpc);
-
+  
   exporter.parse(
     worldRef.value.scene.three,
     (gltf) => {
-      // Save GLTF
-      // gltf["extras"] = metadata;
       if (gltf instanceof ArrayBuffer) {
         const glbBlob = new Blob([gltf], { type: "model/gltf-binary" });
         downloadFile(glbBlob, "model.glb");
-
-        // Save Metadata
       }
-      // const metadataBlob = new Blob([JSON.stringify(metadata, null, 2)], { type: "application/json" });
-      // downloadFile(metadataBlob, "metadata.json");
     },
     (err) => {
-      console.log("[EXPORT GLTF ERR]  err ", err);
+      console.error("Error exporting GLTF:", err);
+      alert("Failed to export model.");
     },
     {
       trs: true,
@@ -110,10 +156,6 @@ const exportGLTF = () => {
     }
   );
 };
-
-function disposeFragments() {
-  fragments.dispose();
-}
 
 // Initialize the 3D scene and UI
 onMounted(async () => {
@@ -136,6 +178,7 @@ onMounted(async () => {
 
   const cameraComponent = new OBC.SimpleCamera(components);
   world.camera = cameraComponent;
+  world.camera.controls.setLookAt(10, 5.5, 5, -4, -1, -6.5);
 
   // Handle window resize
   window.addEventListener("resize", () => {
@@ -150,18 +193,6 @@ onMounted(async () => {
   // Initialize components
   components.init();
 
-  world.camera.controls.setLookAt(12, 6, 8, 0, 0, -10);
-
-  world.scene.setup();
-
-  const fragments = components.get(OBC.FragmentsManager);
-  const fragmentIfcLoader = components.get(OBC.IfcLoader);
-
-  await fragmentIfcLoader.setup();
-
-  var last_model; // : FragmentsGroup;
-  var metadata;
-
   // Set up the IFC loader
   const ifcLoader = components.get(OBC.IfcLoader);
   await ifcLoader.setup();
@@ -169,10 +200,10 @@ onMounted(async () => {
   // Set up the fragments manager
   const fragmentsManager = components.get(OBC.FragmentsManager);
   fragmentsManager.onFragmentsLoaded.add((model) => {
-    if (world.scene) world.scene.three.add(model);
+    if (world.scene) {
+      world.scene.three.add(model);
+    }
   });
-
-  const [loadIfcBtn] = BUIC.buttons.loadIfc({ components });
 
   // Create the models list component
   const [modelsListElement] = BUIC.tables.modelsList({
@@ -181,74 +212,158 @@ onMounted(async () => {
     actions: { download: false },
   });
 
-  // console.log("the model list is, ", modelsListElement);
-
   // Append the models list to the DOM
   modelsList.value.appendChild(modelsListElement);
-  loadIfcButton.value.appendChild(loadIfcBtn);
 
-  console.log(loadIfcBtn.className, loadIfcButton);
+  // Configure entity attributes panel
+  const baseStyle = { padding: "0.25rem", borderRadius: "0.25rem" };
+  const tableDefinition = {
+    Entity: (entity) => {
+      let style = {};
+      if (entity === OBC.IfcCategoryMap[WEBIFC.IFCPROPERTYSET]) {
+        style = { ...baseStyle, backgroundColor: "purple", color: "white" };
+      }
+      if (String(entity).includes("IFCWALL")) {
+        style = { ...baseStyle, backgroundColor: "green", color: "white" };
+      }
+      return BUI.html`<bim-label style=${BUI.styleMap(style)}>${entity}</bim-label>`;
+    },
+    PredefinedType: (type) => {
+      const colors = ["#1c8d83", "#3c1c8d", "#386c19", "#837c24"];
+      const randomIndex = Math.floor(Math.random() * colors.length);
+      const backgroundColor = colors[randomIndex];
+      const style = { ...baseStyle, backgroundColor, color: "white" };
+      return BUI.html`<bim-label style=${BUI.styleMap(style)}>${type}</bim-label>`;
+    },
+    NominalValue: (value) => {
+      let style = {};
+      if (typeof value === "boolean" && value === false) {
+        style = { ...baseStyle, backgroundColor: "#b13535", color: "white" };
+      }
+      if (typeof value === "boolean" && value === true) {
+        style = { ...baseStyle, backgroundColor: "#18882c", color: "white" };
+      }
+      return BUI.html`<bim-label style=${BUI.styleMap(style)}>${value}</bim-label>`;
+    },
+  };
 
-  // console.log(loadIfcBtn, loadIfcButton);
-  fragments.onFragmentsLoaded.add((model) => {
-  console.log("the data from the event is this :", model);
-});
+  const [attributesTable, updateAttributesTable] = BUIC.tables.entityAttributes({
+    components,
+    fragmentIdMap: {},
+    tableDefinition,
+    attributesToInclude: () => {
+      const attributes = [
+        "Name",
+        "ContainedInStructure",
+        "HasProperties",
+        "HasPropertySets",
+        (name) => name.includes("Value"),
+        (name) => name.startsWith("Material"),
+        (name) => name.startsWith("Relating"),
+        (name) => {
+          const ignore = ["IsGroupedBy", "IsDecomposedBy"];
+          return name.startsWith("Is") && !ignore.includes(name);
+        },
+      ];
+      return attributes;
+    },
+  });
+
+  attributesTable.expanded = true;
+  attributesTable.indentationInText = true;
+  attributesTable.preserveStructureOnFilter = true;
+
+  const highlighter = components.get(OBCF.Highlighter);
+  highlighter.setup({ world });
+
+  highlighter.events.select.onHighlight.add((fragmentIdMap) => {
+    updateAttributesTable({ fragmentIdMap });
+  });
+
+  highlighter.events.select.onClear.add(() => updateAttributesTable({ fragmentIdMap: {} }));
+
+  const panelContent = BUI.Component.create(() => {
+    const onSearchInput = (e) => {
+      const input = e.target;
+      attributesTable.queryString = input.value;
+    };
+
+    const onPreserveStructureChange = (e) => {
+      const checkbox = e.target;
+      attributesTable.preserveStructureOnFilter = checkbox.checked;
+    };
+
+    const onExportJSON = () => {
+      attributesTable.downloadData("entities-attributes");
+    };
+
+    const onCopyTSV = async () => {
+      await navigator.clipboard.writeText(attributesTable.tsv);
+      alert("Table data copied as TSV in clipboard! Try to paste it in a spreadsheet app.");
+    };
+
+    const onAttributesChange = (e) => {
+      const dropdown = e.target;
+      updateAttributesTable({
+        attributesToInclude: () => {
+          const attributes = [
+            ...dropdown.value,
+            (name) => name.includes("Value"),
+            (name) => name.startsWith("Material"),
+            (name) => name.startsWith("Relating"),
+            (name) => {
+              const ignore = ["IsGroupedBy", "IsDecomposedBy"];
+              return name.startsWith("Is") && !ignore.includes(name);
+            },
+          ];
+          return attributes;
+        },
+      });
+    };
+
+    return BUI.html`
+      <bim-panel-section label="Entity Attributes" fixed>
+        <div style="display: flex; gap: 0.5rem; justify-content: space-between;">
+          <div style="display: flex; gap: 0.5rem;">
+            <bim-text-input @input=${onSearchInput} type="search" placeholder="Search" debounce="250"></bim-text-input>
+            <bim-checkbox @change=${onPreserveStructureChange} label="Preserve Structure" inverted checked></bim-checkbox>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <bim-dropdown @change=${onAttributesChange} multiple>
+              <bim-option label="Name" checked></bim-option> 
+              <bim-option label="ContainedInStructure" checked></bim-option>
+              <bim-option label="ForLayerSet"></bim-option>
+              <bim-option label="LayerThickness"></bim-option>
+              <bim-option label="HasProperties" checked></bim-option>
+              <bim-option label="HasAssociations"></bim-option>
+              <bim-option label="HasAssignments"></bim-option>
+              <bim-option label="HasPropertySets" checked></bim-option>
+              <bim-option label="PredefinedType"></bim-option>
+              <bim-option label="Quantities"></bim-option>
+              <bim-option label="ReferencedSource"></bim-option>
+              <bim-option label="Identification"></bim-option>
+              <bim-option label="Prefix"></bim-option>
+              <bim-option label="LongName"></bim-option>
+            </bim-dropdown>
+            <bim-button @click=${onCopyTSV} icon="solar:copy-bold" tooltip-title="Copy TSV" tooltip-text="Copy the table contents as tab separated text values, so you can copy them into a spreadsheet."></bim-button>
+            <bim-button @click=${onExportJSON} icon="ph:export-fill" tooltip-title="Export JSON" tooltip-text="Download the table contents as a JSON file."></bim-button>
+          </div>
+        </div>
+        ${attributesTable}
+      </bim-panel-section>
+    `;
+  });
+
+  // Add attributes panel to the DOM
+  entityAttributesPanel.value.appendChild(panelContent);
+
+  // Store references
   componentsRef.value = components;
   worldRef.value = world;
-  worldsRef.value = worlds;
-  fragementsRef.value = fragments;
-  fragementsIcfLoaderRef.value = fragmentIfcLoader;
+  highlighterRef.value = highlighter;
+  attributesUpdateRef.value = updateAttributesTable;
 });
-
-// Function to load an IFC file
-const loadIfc = async () => {
-  // Add your IFC loading logic here
-  console.log("Loading IFC file...");
-};
 </script>
-
-<template>
-  <div>
-    <!-- Container for the 3D viewport -->
-    <div id="container" ref="container" class="relative">
-      <!-- BIM Panel for IFC Models -->
-      <bim-panel label="IFC Models" class="absolute top-0 left-0 h-full w-[20%]">
-        
-        <!-- {{ loadIfcButton }} -->
-        <bim-panel-section label="costum Importing" class="">
-          <NButton
-          text-color="white"
-          color="#2e3338"
-          v-on:click="triggerFileUpload"
-          >Load IFC
-          <input
-          type="file"
-          id="ifc-file-input"
-          accept=".ifc"
-          style="display: none"
-          @change="handleFileUpload"
-          />
-        </NButton>
-      </bim-panel-section>
-      <bim-panel-section label="Importing" ref="loadIfcButton" class="hidden">
-      </bim-panel-section>
-        <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
-          <div ref="modelsList">
-            <div v-for="(model, index) in modelsList" :key="index">
-              {{ model }}
-            </div>
-          </div>
-          <!-- <div v-else ref="modelsList"></div> -->
-        </bim-panel-section>
-        <bim-panel-section>
-          <NButton @click="exportGLTF" text-color="white" color="#2e3338"
-            >Export GLTF</NButton
-          >
-        </bim-panel-section>
-      </bim-panel>
-    </div>
-  </div>
-</template>
 
 <style scoped>
 #container {

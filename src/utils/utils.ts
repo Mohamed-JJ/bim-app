@@ -26,7 +26,6 @@ export function download(file: File) {
 export function triggerFileUpload() {
   const fileInput = document.getElementById("ifc-file-input");
   if (fileInput) {
-    console.log("clicked on upload element");
     fileInput.click();
   } else {
     console.error("File input element not found");
