@@ -29,7 +29,8 @@
         </bim-panel-section>
       </bim-panel>
     </div>
-    <div v-if="entityAttributesPanel" ref="entityAttributesPanel"></div>
+    <!-- <div v-if="entityAttributesPanel" ref="entityAttributesPanel"></div> -->
+    <EntityAttributesPanel/>
   </div>
 </template>
 
@@ -44,12 +45,11 @@ import * as CUI from "@thatopen/ui-obc";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { FragmentsGroup } from "@thatopen/fragments";
 import * as BUIC from "@thatopen/ui-obc";
+import EntityAttributesPanel from "./EntityAttributesPanel.vue";
 
 // Refs
 const container = ref<HTMLElement | null>(null);
-const panel = ref<HTMLElement | null>(null);
-const entityAttributesPanel = ref<HTMLElement | null>(null);
-const model_listRef = ref(null);
+// const entityAttributesPanel = ref<HTMLElement | null>(null);
 const loadIfcButton = ref();
 
 // State
@@ -78,15 +78,20 @@ const excludedCats = [
 // Setup
 onMounted(async () => {
   if (!container.value) return;
-  const components = new OBC.Components();
 
+  // to load all the components
+  const components = new OBC.Components();
+  // the worlds
   const worlds = components.get(OBC.Worlds);
+  // the world
   const world = worlds.create<
     OBC.SimpleScene,
     OBC.SimpleCamera,
     OBC.SimpleRenderer
   >();
+  // the fragments in the world
   const fragments = components.get(OBC.FragmentsManager);
+  // the fragments loader function
   const fragmentIfcLoader = components.get(OBC.IfcLoader);
   let lastModel: FragmentsGroup | null = null;
   let metadata: any = null;
@@ -131,8 +136,8 @@ onMounted(async () => {
 
   // Create UI panels
   // if (panel.value) panel.value.append(createPanel());
-  if (entityAttributesPanel.value)
-    entityAttributesPanel.value.append(createEntityAttributesPanel(components));
+  // if (entityAttributesPanel.value)
+  //   entityAttributesPanel.value.append(createEntityAttributesPanel(components));
 
   loadIfcButton.value.appendChild(loadIfcBtn);
 
