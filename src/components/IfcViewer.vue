@@ -7,6 +7,12 @@
         class="absolute top-0 right-0"
       >
         <bim-panel-section collapsed label="Controls">
+          <bim-panel-section
+            label="Importing"
+            ref="loadIfcButton"
+            class="hidden"
+          >
+          </bim-panel-section>
           <bim-button label="Load IFC" @click="triggerFileUpload"></bim-button>
           <input
             type="file"
@@ -23,8 +29,8 @@
         </bim-panel-section>
       </bim-panel>
     </div>
+    <div v-if="entityAttributesPanel" ref="entityAttributesPanel"></div>
   </div>
-  <div v-if="entityAttributesPanel" ref="entityAttributesPanel"></div>
 </template>
 
 <script lang="ts" setup>
@@ -37,12 +43,14 @@ import * as CUI from "@thatopen/ui-obc";
 // import * as OBF from "@thatopen/components-front";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { FragmentsGroup } from "@thatopen/fragments";
+import * as BUIC from "@thatopen/ui-obc";
 
 // Refs
 const container = ref<HTMLElement | null>(null);
 const panel = ref<HTMLElement | null>(null);
 const entityAttributesPanel = ref<HTMLElement | null>(null);
 const model_listRef = ref(null);
+const loadIfcButton = ref();
 
 // State
 
@@ -95,7 +103,7 @@ onMounted(async () => {
     rendererComponent.resize();
     cameraComponent.updateAspect();
   });
-
+  const [loadIfcBtn] = BUIC.buttons.loadIfc({ components });
   components.init();
   world.camera.controls.setLookAt(12, 6, 8, 0, 0, -10);
   world.scene.setup();
@@ -122,9 +130,11 @@ onMounted(async () => {
   await loadIfc();
 
   // Create UI panels
-  if (panel.value) panel.value.append(createPanel());
+  // if (panel.value) panel.value.append(createPanel());
   if (entityAttributesPanel.value)
     entityAttributesPanel.value.append(createEntityAttributesPanel(components));
+
+  loadIfcButton.value.appendChild(loadIfcBtn);
 
   componentsRef.value = components;
   worldsRef.value = worlds;
@@ -139,6 +149,7 @@ async function loadIfc() {
   const data = await file.arrayBuffer();
   const buffer = new Uint8Array(data);
   const model = await fragmentIfcLoaderRef.value?.load(buffer);
+  console.log("the model is:", model);
   worldRef.value?.scene.three.add(model!);
   lastModelRef.value = model!;
   metadataRef.value = model!.getLocalProperties();
@@ -170,15 +181,17 @@ async function handleFileUpload(event: Event) {
     console.log("here2", buffer);
 
     const model = await fragmentIfcLoaderRef.value?.load(buffer);
-    console.log("here3");
+    console.log("here3", model);
 
     worldRef.value?.scene.three.add(model!);
     console.log("here4");
     await setupEntityAttributes(model);
     console.log("here5");
 
-    metadataRef.value = model?.getLocalProperties();
-    console.log("here6");
+    if (model) {
+      metadataRef.value = model.getLocalProperties();
+      console.log("here6");
+    }
 
     lastModelRef.value = model;
     console.log("here7", model);
@@ -233,42 +246,40 @@ async function setupEntityAttributes(model: FragmentsGroup) {
   await indexer?.process(model);
 }
 
-function createPanel() {
-  return BUI.Component.create<BUI.PanelSection>(() => {
-    return BUI.html`
-      <bim-panel active label="IFC Loader Tutorial" class="options-menu absolute right-0 top-0">
-        <bim-panel-section collapsed label="Controls">
-          <bim-button label="Load IFC" @click="${triggerFileUpload}"></bim-button>
-          <input type="file" id="ifc-file-input" accept=".ifc" style="display: none;" @change="${handleFileUpload}" />
-          <bim-button label="Export GLTF" @click="${exportGLTF}"></bim-button>
-          <bim-button label="Dispose fragments" @click="${disposeFragments}"></bim-button>
-        </bim-panel-section>
-      </bim-panel>
-    `;
-  });
-}
+// function createPanel() {
+//   return BUI.Component.create<BUI.PanelSection>(() => {
+//     return BUI.html`
+//       <bim-panel active label="IFC Loader Tutorial" class="options-menu absolute right-0 top-0">
+//         <bim-panel-section collapsed label="Controls">
+//           <bim-button label="Load IFC" @click="${triggerFileUpload}"></bim-button>
+//           <input type="file" id="ifc-file-input" accept=".ifc" style="display: none;" @change="${handleFileUpload}" />
+//           <bim-button label="Export GLTF" @click="${exportGLTF}"></bim-button>
+//           <bim-button label="Dispose fragments" @click="${disposeFragments}"></bim-button>
+//         </bim-panel-section>
+//       </bim-panel>
+//     `;
+//   });
+// }
 
 function createEntityAttributesPanel(components: OBC.Components) {
-  const [attributesTable, _updateAttributesTable] = CUI.tables.entityAttributes(
-    {
-      components,
-      fragmentIdMap: {},
-      tableDefinition: {},
-      attributesToInclude: () => [
-        "Name",
-        "ContainedInStructure",
-        "HasProperties",
-        "HasPropertySets",
-        (name: string) => name.includes("Value"),
-        (name: string) => name.startsWith("Material"),
-        (name: string) => name.startsWith("Relating"),
-        (name: string) => {
-          const ignore = ["IsGroupedBy", "IsDecomposedBy"];
-          return name.startsWith("Is") && !ignore.includes(name);
-        },
-      ],
-    }
-  );
+  const [attributesTable, updateAttributesTable] = CUI.tables.entityAttributes({
+    components,
+    fragmentIdMap: {},
+    tableDefinition: {},
+    attributesToInclude: () => [
+      "Name",
+      "ContainedInStructure",
+      "HasProperties",
+      "HasPropertySets",
+      (name: string) => name.includes("Value"),
+      (name: string) => name.startsWith("Material"),
+      (name: string) => name.startsWith("Relating"),
+      (name: string) => {
+        const ignore = ["IsGroupedBy", "IsDecomposedBy"];
+        return name.startsWith("Is") && !ignore.includes(name);
+      },
+    ],
+  });
 
   return BUI.Component.create<BUI.PanelSection>(() => {
     return BUI.html`
