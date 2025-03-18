@@ -16,6 +16,7 @@ const loadIfcButton = ref(null);
 
 // that open docs BIM variables and dependencies
 const componentsRef = ref(null);
+const firstFile = ref(null)
 const worldRef = ref(null);
 const worldsRef = ref(null);
 const last_modelRef = ref(null);
@@ -189,7 +190,9 @@ onMounted(async () => {
   console.log(loadIfcBtn.className, loadIfcButton);
 
   // console.log(loadIfcBtn, loadIfcButton);
-
+  fragments.onFragmentsLoaded.add((model) => {
+  console.log("the data from the event is this :", model);
+});
   componentsRef.value = components;
   worldRef.value = world;
   worldsRef.value = worlds;
@@ -209,26 +212,26 @@ const loadIfc = async () => {
     <!-- Container for the 3D viewport -->
     <div id="container" ref="container" class="relative">
       <!-- BIM Panel for IFC Models -->
-      <div label="IFC Models" class="absolute top-0 left-0 h-full w-[20%]">
-        <bim-panel-section label="Importing" ref="loadIfcButton" class="hidden">
-        </bim-panel-section>
-
+      <bim-panel label="IFC Models" class="absolute top-0 left-0 h-full w-[20%]">
+        
         <!-- {{ loadIfcButton }} -->
         <bim-panel-section label="costum Importing" class="">
           <NButton
-            text-color="white"
-            color="#2e3338"
-            v-on:click="triggerFileUpload"
-            >Load IFC
-            <input
-              type="file"
-              id="ifc-file-input"
-              accept=".ifc"
-              style="display: none"
-              @change="handleFileUpload"
-            />
-          </NButton>
-        </bim-panel-section>
+          text-color="white"
+          color="#2e3338"
+          v-on:click="triggerFileUpload"
+          >Load IFC
+          <input
+          type="file"
+          id="ifc-file-input"
+          accept=".ifc"
+          style="display: none"
+          @change="handleFileUpload"
+          />
+        </NButton>
+      </bim-panel-section>
+      <bim-panel-section label="Importing" ref="loadIfcButton" class="hidden">
+      </bim-panel-section>
         <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
           <div ref="modelsList">
             <div v-for="(model, index) in modelsList" :key="index">
@@ -242,7 +245,7 @@ const loadIfc = async () => {
             >Export GLTF</NButton
           >
         </bim-panel-section>
-      </div>
+      </bim-panel>
     </div>
   </div>
 </template>
