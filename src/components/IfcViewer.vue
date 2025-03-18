@@ -209,10 +209,7 @@ const loadIfc = async () => {
     <!-- Container for the 3D viewport -->
     <div id="container" ref="container" class="relative">
       <!-- BIM Panel for IFC Models -->
-      <bim-panel
-        label="IFC Models"
-        class="absolute top-0 left-0 h-full w-[20%]"
-      >
+      <div label="IFC Models" class="absolute top-0 left-0 h-full w-[20%]">
         <bim-panel-section label="Importing" ref="loadIfcButton" class="hidden">
         </bim-panel-section>
 
@@ -233,7 +230,11 @@ const loadIfc = async () => {
           </NButton>
         </bim-panel-section>
         <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
-          <div ref="modelsList"></div>
+          <div ref="modelsList">
+            <div v-for="(model, index) in modelsList" :key="index">
+              {{ model }}
+            </div>
+          </div>
           <!-- <div v-else ref="modelsList"></div> -->
         </bim-panel-section>
         <bim-panel-section>
@@ -241,7 +242,7 @@ const loadIfc = async () => {
             >Export GLTF</NButton
           >
         </bim-panel-section>
-      </bim-panel>
+      </div>
     </div>
   </div>
 </template>
