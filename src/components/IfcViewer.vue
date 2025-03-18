@@ -1,6 +1,29 @@
 <template>
-  <div id="container" ref="container"></div>
-  <div v-if="panel" ref="panel"></div>
+  <div id="container" ref="container" class="w-screen h-screen relative">
+    <div>
+      <bim-panel
+        active
+        label="IFC Loader Tutorial"
+        class="absolute top-0 right-0"
+      >
+        <bim-panel-section collapsed label="Controls">
+          <bim-button label="Load IFC" @click="triggerFileUpload"></bim-button>
+          <input
+            type="file"
+            id="ifc-file-input"
+            accept=".ifc"
+            style="display: none"
+            @change="handleFileUpload"
+          />
+          <bim-button label="Export GLTF" @click="exportGLTF"></bim-button>
+          <bim-button
+            label="Dispose fragments"
+            @click="disposeFragments"
+          ></bim-button>
+        </bim-panel-section>
+      </bim-panel>
+    </div>
+  </div>
   <div v-if="entityAttributesPanel" ref="entityAttributesPanel"></div>
 </template>
 
@@ -11,7 +34,7 @@ import * as BUI from "@thatopen/ui";
 import Stats from "stats.js";
 import * as OBC from "@thatopen/components";
 import * as CUI from "@thatopen/ui-obc";
-import * as OBF from "@thatopen/components-front";
+// import * as OBF from "@thatopen/components-front";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { FragmentsGroup } from "@thatopen/fragments";
 
@@ -19,16 +42,23 @@ import { FragmentsGroup } from "@thatopen/fragments";
 const container = ref<HTMLElement | null>(null);
 const panel = ref<HTMLElement | null>(null);
 const entityAttributesPanel = ref<HTMLElement | null>(null);
+const model_listRef = ref(null);
 
 // State
-const components = new OBC.Components();
-const worlds = components.get(OBC.Worlds);
-const world = worlds.create<OBC.SimpleScene, OBC.SimpleCamera, OBC.SimpleRenderer>();
-const fragments = components.get(OBC.FragmentsManager);
-const fragmentIfcLoader = components.get(OBC.IfcLoader);
-const stats = new Stats();
-let lastModel: FragmentsGroup | null = null;
-let metadata: any = null;
+
+const componentsRef = ref<OBC.Components | null>(null);
+const worldsRef = ref<OBC.Worlds | null>(null);
+const stats = ref(new Stats());
+
+const worldRef = ref<OBC.SimpleWorld<
+  OBC.SimpleScene,
+  OBC.SimpleCamera,
+  OBC.SimpleRenderer
+> | null>(null);
+const fragmentsRef = ref<OBC.FragmentsManager | null>(null);
+const fragmentIfcLoaderRef = ref<OBC.IfcLoader | null>(null);
+const lastModelRef = ref<FragmentsGroup | null>(null);
+const metadataRef = ref<any | null>(null);
 
 // Excluded categories
 const excludedCats = [
@@ -40,6 +70,18 @@ const excludedCats = [
 // Setup
 onMounted(async () => {
   if (!container.value) return;
+  const components = new OBC.Components();
+
+  const worlds = components.get(OBC.Worlds);
+  const world = worlds.create<
+    OBC.SimpleScene,
+    OBC.SimpleCamera,
+    OBC.SimpleRenderer
+  >();
+  const fragments = components.get(OBC.FragmentsManager);
+  const fragmentIfcLoader = components.get(OBC.IfcLoader);
+  let lastModel: FragmentsGroup | null = null;
+  let metadata: any = null;
 
   // Initialize components
   BUI.Manager.init();
@@ -63,23 +105,32 @@ onMounted(async () => {
   world.scene.three.background = null;
 
   await fragmentIfcLoader.setup();
-  excludedCats.forEach((cat) => fragmentIfcLoader.settings.excludedCategories.add(cat));
+  excludedCats.forEach((cat) =>
+    fragmentIfcLoader.settings.excludedCategories.add(cat)
+  );
   fragmentIfcLoader.settings.webIfc.COORDINATE_TO_ORIGIN = true;
 
   // Stats.js setup
-  stats.showPanel(2);
-  document.body.append(stats.dom);
-  stats.dom.style.left = "0px";
-  stats.dom.style.zIndex = "unset";
-  world.renderer.onBeforeUpdate.add(() => stats.begin());
-  world.renderer.onAfterUpdate.add(() => stats.end());
+  stats.value.showPanel(2);
+  document.body.append(stats.value.dom);
+  stats.value.dom.style.left = "0px";
+  stats.value.dom.style.zIndex = "unset";
+  world.renderer.onBeforeUpdate.add(() => stats.value.begin());
+  world.renderer.onAfterUpdate.add(() => stats.value.end());
 
   // Load IFC
   await loadIfc();
 
   // Create UI panels
   if (panel.value) panel.value.append(createPanel());
-  if (entityAttributesPanel.value) entityAttributesPanel.value.append(createEntityAttributesPanel());
+  if (entityAttributesPanel.value)
+    entityAttributesPanel.value.append(createEntityAttributesPanel(components));
+
+  componentsRef.value = components;
+  worldsRef.value = worlds;
+  worldRef.value = world;
+  fragmentsRef.value = fragments;
+  fragmentIfcLoaderRef.value = fragmentIfcLoader;
 });
 
 // Functions
@@ -87,21 +138,25 @@ async function loadIfc() {
   const file = await fetch("ifc/archi.ifc");
   const data = await file.arrayBuffer();
   const buffer = new Uint8Array(data);
-  const model = await fragmentIfcLoader.load(buffer);
-  world.scene.three.add(model);
-  lastModel = model;
-  metadata = model.getLocalProperties();
-  console.log("[INIT Load] metadata:", metadata);
-  console.log("[INIT Load] model:", lastModel);
+  const model = await fragmentIfcLoaderRef.value?.load(buffer);
+  worldRef.value?.scene.three.add(model!);
+  lastModelRef.value = model!;
+  metadataRef.value = model!.getLocalProperties();
+  console.log("[INIT Load] metadata:", metadataRef.value);
+  console.log("[INIT Load] model:", lastModelRef.value);
 }
 
 function triggerFileUpload() {
   const fileInput = document.getElementById("ifc-file-input");
-  if (fileInput) fileInput.click();
+  if (fileInput) {
+    console.log("clicked");
+    fileInput.click();
+  }
 }
 
 async function handleFileUpload(event: Event) {
   const file = (event.target as HTMLInputElement)?.files?.[0];
+  console.log(file);
   if (!file) {
     alert("No file selected!");
     return;
@@ -109,14 +164,27 @@ async function handleFileUpload(event: Event) {
 
   try {
     const data = await readFile(file);
+    console.log("here1");
+
     const buffer = new Uint8Array(data);
-    const model = await fragmentIfcLoader.load(buffer);
-    world.scene.three.add(model);
+    console.log("here2", buffer);
+
+    const model = await fragmentIfcLoaderRef.value?.load(buffer);
+    console.log("here3");
+
+    worldRef.value?.scene.three.add(model!);
+    console.log("here4");
     await setupEntityAttributes(model);
-    metadata = model.getLocalProperties();
-    lastModel = model;
-    console.log("[INIT Load] metadata:", metadata);
-    console.log("[INIT Load] model:", lastModel);
+    console.log("here5");
+
+    metadataRef.value = model?.getLocalProperties();
+    console.log("here6");
+
+    lastModelRef.value = model;
+    console.log("here7", model);
+
+    console.log("[INIT Load] metadata:", metadataRef.value);
+    console.log("[INIT Load] model:", lastModelRef.value);
   } catch (error) {
     console.error("Error loading IFC file:", error);
     alert("Failed to load IFC file.");
@@ -124,11 +192,11 @@ async function handleFileUpload(event: Event) {
 }
 
 async function exportGLTF() {
-  if (!lastModel) return;
+  if (!lastModelRef.value) return;
 
   const exporter = new GLTFExporter();
   exporter.parse(
-    world.scene.three,
+    worldRef.value!.scene.three,
     (gltf) => {
       if (gltf instanceof ArrayBuffer) {
         const glbBlob = new Blob([gltf], { type: "model/gltf-binary" });
@@ -141,7 +209,7 @@ async function exportGLTF() {
 }
 
 function disposeFragments() {
-  fragments.dispose();
+  fragmentsRef.value?.dispose();
 }
 
 function downloadFile(blob: Blob, filename: string) {
@@ -161,14 +229,14 @@ function readFile(file: File): Promise<ArrayBuffer> {
 }
 
 async function setupEntityAttributes(model: FragmentsGroup) {
-  const indexer = components.get(OBC.IfcRelationsIndexer);
-  await indexer.process(model);
+  const indexer = componentsRef.value?.get(OBC.IfcRelationsIndexer);
+  await indexer?.process(model);
 }
 
 function createPanel() {
   return BUI.Component.create<BUI.PanelSection>(() => {
     return BUI.html`
-      <bim-panel active label="IFC Loader Tutorial" class="options-menu">
+      <bim-panel active label="IFC Loader Tutorial" class="options-menu absolute right-0 top-0">
         <bim-panel-section collapsed label="Controls">
           <bim-button label="Load IFC" @click="${triggerFileUpload}"></bim-button>
           <input type="file" id="ifc-file-input" accept=".ifc" style="display: none;" @change="${handleFileUpload}" />
@@ -180,25 +248,27 @@ function createPanel() {
   });
 }
 
-function createEntityAttributesPanel() {
-  const [attributesTable, updateAttributesTable] = CUI.tables.entityAttributes({
-    components,
-    fragmentIdMap: {},
-    tableDefinition: {},
-    attributesToInclude: () => [
-      "Name",
-      "ContainedInStructure",
-      "HasProperties",
-      "HasPropertySets",
-      (name: string) => name.includes("Value"),
-      (name: string) => name.startsWith("Material"),
-      (name: string) => name.startsWith("Relating"),
-      (name: string) => {
-        const ignore = ["IsGroupedBy", "IsDecomposedBy"];
-        return name.startsWith("Is") && !ignore.includes(name);
-      },
-    ],
-  });
+function createEntityAttributesPanel(components: OBC.Components) {
+  const [attributesTable, _updateAttributesTable] = CUI.tables.entityAttributes(
+    {
+      components,
+      fragmentIdMap: {},
+      tableDefinition: {},
+      attributesToInclude: () => [
+        "Name",
+        "ContainedInStructure",
+        "HasProperties",
+        "HasPropertySets",
+        (name: string) => name.includes("Value"),
+        (name: string) => name.startsWith("Material"),
+        (name: string) => name.startsWith("Relating"),
+        (name: string) => {
+          const ignore = ["IsGroupedBy", "IsDecomposedBy"];
+          return name.startsWith("Is") && !ignore.includes(name);
+        },
+      ],
+    }
+  );
 
   return BUI.Component.create<BUI.PanelSection>(() => {
     return BUI.html`
