@@ -1,5 +1,6 @@
 <template>
   <IfcViewer />
+
 </template>
 
 <script setup>

@@ -15,10 +15,12 @@
     "@thatopen/fragments": "^2.4.0",
     "@thatopen/ui": "^2.4.2",
     "@thatopen/ui-obc": "^2.4.1",
+    "@vueuse/core": "^13.0.0",
     "axios": "^1.8.3",
     "tailwindcss": "^4.0.14",
     "three": "^0.160.1",
     "vue": "^3.5.13",
+    "vuedraggable": "^2.24.3",
     "web-ifc": "^0.0.66"
   },
   "devDependencies": {

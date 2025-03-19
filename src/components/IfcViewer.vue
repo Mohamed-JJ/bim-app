@@ -3,6 +3,7 @@
     <div id="container" ref="container" class="relative w-full h-full">
       <!-- BIM Panel for IFC Models -->
       <bim-panel label="IFC Models" class="absolute top-0 left-0">
+
         <bim-panel-section label="Custom Importing">
           <NButton text-color="white" color="#2e3338" @click="triggerFileUpload">
             Load IFC
@@ -32,51 +33,54 @@
           <NButton @click="disposeFragements" text-color="white" color="#2e3338">
             Dispose Fragements
           </NButton>
-        </bim-panel-section>
+      </bim-panel-section>
+
       </bim-panel>
       
       <!-- Entity Attributes Panel -->
-      <bim-panel class="absolute top-0 right-0">
-        <bim-panel-section label="Entity Attributes" fixed>
-          <div style="display: flex; gap: 0.5rem; justify-content: space-between;">
-            <div style="display: flex; gap: 0.5rem;">
-              <bim-text-input 
+      <div class="attributesTableRef.value ? : hidden">
+        <bim-panel class="absolute top-0 right-0">
+          <bim-panel-section label="Entity Attributes" fixed>
+            <div style="display: flex; gap: 0.5rem; justify-content: space-between;">
+              <div style="display: flex; gap: 0.5rem;">
+                <bim-text-input 
                 @input="onSearchInput" 
                 type="search" 
                 placeholder="Search" 
                 debounce="250"
-              ></bim-text-input>
-              <bim-checkbox 
+                ></bim-text-input>
+                <bim-checkbox 
                 @change="onPreserveStructureChange" 
                 label="Preserve Structure" 
                 inverted 
                 :checked="preserveStructure"
-              ></bim-checkbox>
+                ></bim-checkbox>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <bim-dropdown @change="onAttributesChange" multiple>
+                  <bim-option label="Name" checked></bim-option> 
+                  <bim-option label="ContainedInStructure" checked></bim-option>
+                  <bim-option label="ForLayerSet"></bim-option>
+                  <bim-option label="LayerThickness"></bim-option>
+                  <bim-option label="HasProperties" checked></bim-option>
+                  <bim-option label="HasAssociations"></bim-option>
+                  <bim-option label="HasAssignments"></bim-option>
+                  <bim-option label="HasPropertySets" checked></bim-option>
+                  <bim-option label="PredefinedType"></bim-option>
+                  <bim-option label="Quantities"></bim-option>
+                  <bim-option label="ReferencedSource"></bim-option>
+                  <bim-option label="Identification"></bim-option>
+                  <bim-option label="Prefix"></bim-option>
+                  <bim-option label="LongName"></bim-option>
+                </bim-dropdown>
+                <bim-button @click="onCopyTSV" icon="solar:copy-bold" tooltip-title="Copy TSV" tooltip-text="Copy the table contents as tab separated text values, so you can copy them into a spreadsheet."></bim-button>
+                <bim-button @click="onExportJSON" icon="ph:export-fill" tooltip-title="Export JSON" tooltip-text="Download the table contents as a JSON file."></bim-button>
+              </div>
             </div>
-            <div style="display: flex; gap: 0.5rem;">
-              <bim-dropdown @change="onAttributesChange" multiple>
-                <bim-option label="Name" checked></bim-option> 
-                <bim-option label="ContainedInStructure" checked></bim-option>
-                <bim-option label="ForLayerSet"></bim-option>
-                <bim-option label="LayerThickness"></bim-option>
-                <bim-option label="HasProperties" checked></bim-option>
-                <bim-option label="HasAssociations"></bim-option>
-                <bim-option label="HasAssignments"></bim-option>
-                <bim-option label="HasPropertySets" checked></bim-option>
-                <bim-option label="PredefinedType"></bim-option>
-                <bim-option label="Quantities"></bim-option>
-                <bim-option label="ReferencedSource"></bim-option>
-                <bim-option label="Identification"></bim-option>
-                <bim-option label="Prefix"></bim-option>
-                <bim-option label="LongName"></bim-option>
-              </bim-dropdown>
-              <bim-button @click="onCopyTSV" icon="solar:copy-bold" tooltip-title="Copy TSV" tooltip-text="Copy the table contents as tab separated text values, so you can copy them into a spreadsheet."></bim-button>
-              <bim-button @click="onExportJSON" icon="ph:export-fill" tooltip-title="Export JSON" tooltip-text="Download the table contents as a JSON file."></bim-button>
-            </div>
-          </div>
-          <div ref="attributesTableContainer"></div>
-        </bim-panel-section>
-      </bim-panel>
+            <div ref="attributesTableContainer"></div>
+          </bim-panel-section>
+        </bim-panel>
+      </div>
     </div>
   </div>
 </template>
