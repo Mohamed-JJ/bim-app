@@ -15,11 +15,11 @@
             />
           </NButton>
         </bim-panel-section>
-        <!-- <bim-panel-section label="Sample Model">
+        <bim-panel-section label="Sample Model">
           <NButton text-color="white" color="#2e3338" @click="loadSampleModel">
             Load Sample Model
           </NButton>
-        </bim-panel-section> -->
+        </bim-panel-section>
         <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
           <div ref="modelsList"></div>
         </bim-panel-section>
@@ -30,13 +30,53 @@
         </bim-panel-section>
         <bim-panel-section>
           <NButton @click="disposeFragements" text-color="white" color="#2e3338">
-            Dispose fragements
+            Dispose Fragements
           </NButton>
         </bim-panel-section>
       </bim-panel>
       
       <!-- Entity Attributes Panel -->
-      <bim-panel ref="entityAttributesPanel" class="absolute top-0 right-0"></bim-panel>
+      <bim-panel class="absolute top-0 right-0">
+        <bim-panel-section label="Entity Attributes" fixed>
+          <div style="display: flex; gap: 0.5rem; justify-content: space-between;">
+            <div style="display: flex; gap: 0.5rem;">
+              <bim-text-input 
+                @input="onSearchInput" 
+                type="search" 
+                placeholder="Search" 
+                debounce="250"
+              ></bim-text-input>
+              <bim-checkbox 
+                @change="onPreserveStructureChange" 
+                label="Preserve Structure" 
+                inverted 
+                :checked="preserveStructure"
+              ></bim-checkbox>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <bim-dropdown @change="onAttributesChange" multiple>
+                <bim-option label="Name" checked></bim-option> 
+                <bim-option label="ContainedInStructure" checked></bim-option>
+                <bim-option label="ForLayerSet"></bim-option>
+                <bim-option label="LayerThickness"></bim-option>
+                <bim-option label="HasProperties" checked></bim-option>
+                <bim-option label="HasAssociations"></bim-option>
+                <bim-option label="HasAssignments"></bim-option>
+                <bim-option label="HasPropertySets" checked></bim-option>
+                <bim-option label="PredefinedType"></bim-option>
+                <bim-option label="Quantities"></bim-option>
+                <bim-option label="ReferencedSource"></bim-option>
+                <bim-option label="Identification"></bim-option>
+                <bim-option label="Prefix"></bim-option>
+                <bim-option label="LongName"></bim-option>
+              </bim-dropdown>
+              <bim-button @click="onCopyTSV" icon="solar:copy-bold" tooltip-title="Copy TSV" tooltip-text="Copy the table contents as tab separated text values, so you can copy them into a spreadsheet."></bim-button>
+              <bim-button @click="onExportJSON" icon="ph:export-fill" tooltip-title="Export JSON" tooltip-text="Download the table contents as a JSON file."></bim-button>
+            </div>
+          </div>
+          <div ref="attributesTableContainer"></div>
+        </bim-panel-section>
+      </bim-panel>
     </div>
   </div>
 </template>
@@ -76,15 +116,70 @@ const triggerFileUpload = () => {
 // Refs for DOM elements
 const container = ref(null);
 const modelsList = ref(null);
-const entityAttributesPanel = ref(null);
+const attributesTableContainer = ref(null);
+
+// Entity panel state
+const preserveStructure = ref(true);
 
 // ThatOpen BIM variables and dependencies
 const componentsRef = ref(null);
 const worldRef = ref(null);
 const highlighterRef = ref(null);
 const last_modelRef = ref(null);
-const attributesUpdateRef = ref(null);
-const fragmentsManagerRef = ref(null);
+const attributesTableRef = ref(null);
+const updateAttributesTableRef = ref(null);
+const fragementsManagerRef = ref(null)
+
+// Entity attributes panel methods
+const onSearchInput = (e) => {
+  if (attributesTableRef.value) {
+    attributesTableRef.value.queryString = e.target.value;
+  }
+};
+
+const disposeFragements =() => {
+  fragementsManagerRef.value.dispose()
+}
+
+const onPreserveStructureChange = (e) => {
+  preserveStructure.value = e.target.checked;
+  if (attributesTableRef.value) {
+    attributesTableRef.value.preserveStructureOnFilter = preserveStructure.value;
+  }
+};
+
+const onExportJSON = () => {
+  if (attributesTableRef.value) {
+    attributesTableRef.value.downloadData("entities-attributes");
+  }
+};
+
+const onCopyTSV = async () => {
+  if (attributesTableRef.value) {
+    await navigator.clipboard.writeText(attributesTableRef.value.tsv);
+    alert("Table data copied as TSV in clipboard! Try to paste it in a spreadsheet app.");
+  }
+};
+
+const onAttributesChange = (e) => {
+  if (updateAttributesTableRef.value) {
+    updateAttributesTableRef.value({
+      attributesToInclude: () => {
+        const attributes = [
+          ...e.target.value,
+          (name) => name.includes("Value"),
+          (name) => name.startsWith("Material"),
+          (name) => name.startsWith("Relating"),
+          (name) => {
+            const ignore = ["IsGroupedBy", "IsDecomposedBy"];
+            return name.startsWith("Is") && !ignore.includes(name);
+          },
+        ];
+        return attributes;
+      },
+    });
+  }
+};
 
 // Handle file upload
 async function handleFileUpload(event) {
@@ -129,10 +224,6 @@ async function loadIFCModel(buffer, name) {
   last_modelRef.value = model;
 }
 
-// function disposeFragements () {
-//   fragmentsManagerRef.value.dispose();
-// }
-
 // Setup entity attributes
 async function setupEntityAttributes(model) {
   const indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
@@ -166,10 +257,6 @@ const exportGLTF = () => {
     }
   );
 };
-
-function disposeFragements () {
-  fragmentsManagerRef.value.dispose()
-}
 
 // Initialize the 3D scene and UI
 onMounted(async () => {
@@ -218,7 +305,6 @@ onMounted(async () => {
       world.scene.three.add(model);
     }
   });
-  
 
   // Create the models list component
   const [modelsListElement] = BUIC.tables.modelsList({
@@ -284,10 +370,19 @@ onMounted(async () => {
     },
   });
 
+  // Configure table
   attributesTable.expanded = true;
   attributesTable.indentationInText = true;
-  attributesTable.preserveStructureOnFilter = true;
+  attributesTable.preserveStructureOnFilter = preserveStructure.value;
+  
+  // Add to the DOM
+  attributesTableContainer.value.appendChild(attributesTable);
+  
+  // Store reference to the table
+  attributesTableRef.value = attributesTable;
+  updateAttributesTableRef.value = updateAttributesTable;
 
+  // Setup highlighter
   const highlighter = components.get(OBCF.Highlighter);
   highlighter.setup({ world });
 
@@ -297,87 +392,11 @@ onMounted(async () => {
 
   highlighter.events.select.onClear.add(() => updateAttributesTable({ fragmentIdMap: {} }));
 
-  const panelContent = BUI.Component.create(() => {
-    const onSearchInput = (e) => {
-      const input = e.target;
-      attributesTable.queryString = input.value;
-    };
-
-    const onPreserveStructureChange = (e) => {
-      const checkbox = e.target;
-      attributesTable.preserveStructureOnFilter = checkbox.checked;
-    };
-
-    const onExportJSON = () => {
-      attributesTable.downloadData("entities-attributes");
-    };
-
-    const onCopyTSV = async () => {
-      await navigator.clipboard.writeText(attributesTable.tsv);
-      alert("Table data copied as TSV in clipboard! Try to paste it in a spreadsheet app.");
-    };
-
-    const onAttributesChange = (e) => {
-      const dropdown = e.target;
-      updateAttributesTable({
-        attributesToInclude: () => {
-          const attributes = [
-            ...dropdown.value,
-            (name) => name.includes("Value"),
-            (name) => name.startsWith("Material"),
-            (name) => name.startsWith("Relating"),
-            (name) => {
-              const ignore = ["IsGroupedBy", "IsDecomposedBy"];
-              return name.startsWith("Is") && !ignore.includes(name);
-            },
-          ];
-          return attributes;
-        },
-      });
-    };
-
-    return BUI.html`
-      <bim-panel-section label="Entity Attributes" fixed>
-        <div style="display: flex; gap: 0.5rem; justify-content: space-between;">
-          <div style="display: flex; gap: 0.5rem;">
-            <bim-text-input @input=${onSearchInput} type="search" placeholder="Search" debounce="250"></bim-text-input>
-            <bim-checkbox @change=${onPreserveStructureChange} label="Preserve Structure" inverted checked></bim-checkbox>
-          </div>
-          <div style="display: flex; gap: 0.5rem;">
-            <bim-dropdown @change=${onAttributesChange} multiple>
-              <bim-option label="Name" checked></bim-option> 
-              <bim-option label="ContainedInStructure" checked></bim-option>
-              <bim-option label="ForLayerSet"></bim-option>
-              <bim-option label="LayerThickness"></bim-option>
-              <bim-option label="HasProperties" checked></bim-option>
-              <bim-option label="HasAssociations"></bim-option>
-              <bim-option label="HasAssignments"></bim-option>
-              <bim-option label="HasPropertySets" checked></bim-option>
-              <bim-option label="PredefinedType"></bim-option>
-              <bim-option label="Quantities"></bim-option>
-              <bim-option label="ReferencedSource"></bim-option>
-              <bim-option label="Identification"></bim-option>
-              <bim-option label="Prefix"></bim-option>
-              <bim-option label="LongName"></bim-option>
-            </bim-dropdown>
-            <bim-button @click=${onCopyTSV} icon="solar:copy-bold" tooltip-title="Copy TSV" tooltip-text="Copy the table contents as tab separated text values, so you can copy them into a spreadsheet."></bim-button>
-            <bim-button @click=${onExportJSON} icon="ph:export-fill" tooltip-title="Export JSON" tooltip-text="Download the table contents as a JSON file."></bim-button>
-          </div>
-        </div>
-        ${attributesTable}
-      </bim-panel-section>
-    `;
-  });
-
-  // Add attributes panel to the DOM
-  entityAttributesPanel.value.appendChild(panelContent);
-
   // Store references
   componentsRef.value = components;
+  fragementsManagerRef.value = fragmentsManager
   worldRef.value = world;
   highlighterRef.value = highlighter;
-  attributesUpdateRef.value = updateAttributesTable;
-  fragmentsManagerRef.value = fragmentsManager
 });
 </script>
 
