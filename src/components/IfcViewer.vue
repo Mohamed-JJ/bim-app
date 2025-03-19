@@ -2,7 +2,7 @@
   <div class="w-screen h-screen">
     <div id="container" ref="container" class="relative w-full h-full">
       <!-- BIM Panel for IFC Models -->
-      <bim-panel label="IFC Models" class="absolute top-0 left-0 h-full w-[20%]">
+      <bim-panel label="IFC Models" class="absolute top-0 left-0">
         <bim-panel-section label="Custom Importing">
           <NButton text-color="white" color="#2e3338" @click="triggerFileUpload">
             Load IFC
@@ -26,6 +26,11 @@
         <bim-panel-section>
           <NButton @click="exportGLTF" text-color="white" color="#2e3338">
             Export GLTF
+          </NButton>
+        </bim-panel-section>
+        <bim-panel-section>
+          <NButton @click="disposeFragements" text-color="white" color="#2e3338">
+            Dispose fragements
           </NButton>
         </bim-panel-section>
       </bim-panel>
@@ -79,6 +84,7 @@ const worldRef = ref(null);
 const highlighterRef = ref(null);
 const last_modelRef = ref(null);
 const attributesUpdateRef = ref(null);
+const fragmentsManagerRef = ref(null);
 
 // Handle file upload
 async function handleFileUpload(event) {
@@ -123,6 +129,10 @@ async function loadIFCModel(buffer, name) {
   last_modelRef.value = model;
 }
 
+// function disposeFragements () {
+//   fragmentsManagerRef.value.dispose();
+// }
+
 // Setup entity attributes
 async function setupEntityAttributes(model) {
   const indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
@@ -156,6 +166,10 @@ const exportGLTF = () => {
     }
   );
 };
+
+function disposeFragements () {
+  fragmentsManagerRef.value.dispose()
+}
 
 // Initialize the 3D scene and UI
 onMounted(async () => {
@@ -204,6 +218,7 @@ onMounted(async () => {
       world.scene.three.add(model);
     }
   });
+  
 
   // Create the models list component
   const [modelsListElement] = BUIC.tables.modelsList({
@@ -362,6 +377,7 @@ onMounted(async () => {
   worldRef.value = world;
   highlighterRef.value = highlighter;
   attributesUpdateRef.value = updateAttributesTable;
+  fragmentsManagerRef.value = fragmentsManager
 });
 </script>
 
