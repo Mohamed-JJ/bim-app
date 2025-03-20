@@ -38,7 +38,7 @@
       </bim-panel>
       
       <!-- Entity Attributes Panel -->
-      <div class="attributesTableRef.value ? : hidden">
+      <div :class="{ hidden: !showEntityPanelRef }">
         <bim-panel class="absolute top-0 right-0">
           <bim-panel-section label="Entity Attributes" fixed>
             <div style="display: flex; gap: 0.5rem; justify-content: space-between;">
@@ -125,6 +125,9 @@ const attributesTableContainer = ref(null);
 // Entity panel state
 const preserveStructure = ref(true);
 
+// show the entity panel state
+const showEntityPanelRef = ref(false)
+
 // ThatOpen BIM variables and dependencies
 const componentsRef = ref(null);
 const worldRef = ref(null);
@@ -143,6 +146,7 @@ const onSearchInput = (e) => {
 
 const disposeFragements =() => {
   fragementsManagerRef.value.dispose()
+  showEntityPanelRef.value = false
 }
 
 const onPreserveStructureChange = (e) => {
@@ -305,6 +309,7 @@ onMounted(async () => {
   // Set up the fragments manager
   const fragmentsManager = components.get(OBC.FragmentsManager);
   fragmentsManager.onFragmentsLoaded.add((model) => {
+    showEntityPanelRef.value = true
     if (world.scene) {
       world.scene.three.add(model);
     }
