@@ -3,9 +3,12 @@
     <div id="container" ref="container" class="relative w-full h-full">
       <!-- BIM Panel for IFC Models -->
       <bim-panel label="IFC Models" class="absolute top-0 left-0">
-
         <bim-panel-section label="Custom Importing">
-          <NButton text-color="white" color="#2e3338" @click="triggerFileUpload">
+          <NButton
+            text-color="white"
+            color="#2e3338"
+            @click="triggerFileUpload"
+          >
             Load IFC
             <input
               type="file"
@@ -30,35 +33,40 @@
           </NButton>
         </bim-panel-section>
         <bim-panel-section>
-          <NButton @click="disposeFragements" text-color="white" color="#2e3338">
+          <NButton
+            @click="disposeFragements"
+            text-color="white"
+            color="#2e3338"
+          >
             Dispose Fragements
           </NButton>
-      </bim-panel-section>
-
+        </bim-panel-section>
       </bim-panel>
-      
+
       <!-- Entity Attributes Panel -->
       <div :class="{ hidden: !showEntityPanelRef }">
         <bim-panel class="absolute top-0 right-0">
           <bim-panel-section label="Entity Attributes" fixed>
-            <div style="display: flex; gap: 0.5rem; justify-content: space-between;">
-              <div style="display: flex; gap: 0.5rem;">
-                <bim-text-input 
-                @input="onSearchInput" 
-                type="search" 
-                placeholder="Search" 
-                debounce="250"
+            <div
+              style="display: flex; gap: 0.5rem; justify-content: space-between"
+            >
+              <div style="display: flex; gap: 0.5rem">
+                <bim-text-input
+                  @input="onSearchInput"
+                  type="search"
+                  placeholder="Search"
+                  debounce="250"
                 ></bim-text-input>
-                <bim-checkbox 
-                @change="onPreserveStructureChange" 
-                label="Preserve Structure" 
-                inverted 
-                :checked="preserveStructure"
+                <bim-checkbox
+                  @change="onPreserveStructureChange"
+                  label="Preserve Structure"
+                  inverted
+                  :checked="preserveStructure"
                 ></bim-checkbox>
               </div>
-              <div style="display: flex; gap: 0.5rem;">
+              <div style="display: flex; gap: 0.5rem">
                 <bim-dropdown @change="onAttributesChange" multiple>
-                  <bim-option label="Name" checked></bim-option> 
+                  <bim-option label="Name" checked></bim-option>
                   <bim-option label="ContainedInStructure" checked></bim-option>
                   <bim-option label="ForLayerSet"></bim-option>
                   <bim-option label="LayerThickness"></bim-option>
@@ -73,8 +81,18 @@
                   <bim-option label="Prefix"></bim-option>
                   <bim-option label="LongName"></bim-option>
                 </bim-dropdown>
-                <bim-button @click="onCopyTSV" icon="solar:copy-bold" tooltip-title="Copy TSV" tooltip-text="Copy the table contents as tab separated text values, so you can copy them into a spreadsheet."></bim-button>
-                <bim-button @click="onExportJSON" icon="ph:export-fill" tooltip-title="Export JSON" tooltip-text="Download the table contents as a JSON file."></bim-button>
+                <bim-button
+                  @click="onCopyTSV"
+                  icon="solar:copy-bold"
+                  tooltip-title="Copy TSV"
+                  tooltip-text="Copy the table contents as tab separated text values, so you can copy them into a spreadsheet."
+                ></bim-button>
+                <bim-button
+                  @click="onExportJSON"
+                  icon="ph:export-fill"
+                  tooltip-title="Export JSON"
+                  tooltip-text="Download the table contents as a JSON file."
+                ></bim-button>
               </div>
             </div>
             <div ref="attributesTableContainer"></div>
@@ -97,7 +115,7 @@ import { NButton } from "naive-ui";
 
 // Utility functions
 const downloadFile = (blob, fileName) => {
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = fileName;
   link.click();
@@ -114,7 +132,7 @@ const readFile = (file) => {
 };
 
 const triggerFileUpload = () => {
-  document.getElementById('ifc-file-input').click();
+  document.getElementById("ifc-file-input").click();
 };
 
 // Refs for DOM elements
@@ -126,7 +144,7 @@ const attributesTableContainer = ref(null);
 const preserveStructure = ref(true);
 
 // show the entity panel state
-const showEntityPanelRef = ref(false)
+const showEntityPanelRef = ref(false);
 
 // ThatOpen BIM variables and dependencies
 const componentsRef = ref(null);
@@ -135,7 +153,7 @@ const highlighterRef = ref(null);
 const last_modelRef = ref(null);
 const attributesTableRef = ref(null);
 const updateAttributesTableRef = ref(null);
-const fragementsManagerRef = ref(null)
+const fragementsManagerRef = ref(null);
 
 // Entity attributes panel methods
 const onSearchInput = (e) => {
@@ -144,15 +162,16 @@ const onSearchInput = (e) => {
   }
 };
 
-const disposeFragements =() => {
-  fragementsManagerRef.value.dispose()
-  showEntityPanelRef.value = false
-}
+const disposeFragements = () => {
+  fragementsManagerRef.value.dispose();
+  showEntityPanelRef.value = false;
+};
 
 const onPreserveStructureChange = (e) => {
   preserveStructure.value = e.target.checked;
   if (attributesTableRef.value) {
-    attributesTableRef.value.preserveStructureOnFilter = preserveStructure.value;
+    attributesTableRef.value.preserveStructureOnFilter =
+      preserveStructure.value;
   }
 };
 
@@ -165,7 +184,9 @@ const onExportJSON = () => {
 const onCopyTSV = async () => {
   if (attributesTableRef.value) {
     await navigator.clipboard.writeText(attributesTableRef.value.tsv);
-    alert("Table data copied as TSV in clipboard! Try to paste it in a spreadsheet app.");
+    alert(
+      "Table data copied as TSV in clipboard! Try to paste it in a spreadsheet app."
+    );
   }
 };
 
@@ -181,10 +202,10 @@ const onAttributesChange = (e) => {
           (name) => {
             const ignore = ["IsGroupedBy", "IsDecomposedBy"];
             return name.startsWith("Is") && !ignore.includes(name);
-          },
+          }
         ];
         return attributes;
-      },
+      }
     });
   }
 };
@@ -210,7 +231,9 @@ async function handleFileUpload(event) {
 // Load sample model
 async function loadSampleModel() {
   try {
-    const file = await fetch("https://thatopen.github.io/engine_ui-components/resources/small.ifc");
+    const file = await fetch(
+      "https://thatopen.github.io/engine_ui-components/resources/small.ifc"
+    );
     const buffer = await file.arrayBuffer();
     const typedArray = new Uint8Array(buffer);
     await loadIFCModel(typedArray, "sample.ifc");
@@ -228,7 +251,7 @@ async function loadIFCModel(buffer, name) {
 
   // Process entity relations
   await setupEntityAttributes(model);
-  
+
   last_modelRef.value = model;
 }
 
@@ -246,7 +269,7 @@ const exportGLTF = () => {
   }
 
   const exporter = new GLTFExporter();
-  
+
   exporter.parse(
     worldRef.value.scene.three,
     (gltf) => {
@@ -261,7 +284,7 @@ const exportGLTF = () => {
     },
     {
       trs: true,
-      binary: true,
+      binary: true
     }
   );
 };
@@ -309,7 +332,7 @@ onMounted(async () => {
   // Set up the fragments manager
   const fragmentsManager = components.get(OBC.FragmentsManager);
   fragmentsManager.onFragmentsLoaded.add((model) => {
-    showEntityPanelRef.value = true
+    showEntityPanelRef.value = true;
     if (world.scene) {
       world.scene.three.add(model);
     }
@@ -319,7 +342,7 @@ onMounted(async () => {
   const [modelsListElement] = BUIC.tables.modelsList({
     components,
     tags: { schema: true, viewDefinition: false },
-    actions: { download: false },
+    actions: { download: false }
   });
 
   // Append the models list to the DOM
@@ -354,39 +377,41 @@ onMounted(async () => {
         style = { ...baseStyle, backgroundColor: "#18882c", color: "white" };
       }
       return BUI.html`<bim-label style=${BUI.styleMap(style)}>${value}</bim-label>`;
-    },
+    }
   };
 
-  const [attributesTable, updateAttributesTable] = BUIC.tables.entityAttributes({
-    components,
-    fragmentIdMap: {},
-    tableDefinition,
-    attributesToInclude: () => {
-      const attributes = [
-        "Name",
-        "ContainedInStructure",
-        "HasProperties",
-        "HasPropertySets",
-        (name) => name.includes("Value"),
-        (name) => name.startsWith("Material"),
-        (name) => name.startsWith("Relating"),
-        (name) => {
-          const ignore = ["IsGroupedBy", "IsDecomposedBy"];
-          return name.startsWith("Is") && !ignore.includes(name);
-        },
-      ];
-      return attributes;
-    },
-  });
+  const [attributesTable, updateAttributesTable] = BUIC.tables.entityAttributes(
+    {
+      components,
+      fragmentIdMap: {},
+      tableDefinition,
+      attributesToInclude: () => {
+        const attributes = [
+          "Name",
+          "ContainedInStructure",
+          "HasProperties",
+          "HasPropertySets",
+          (name) => name.includes("Value"),
+          (name) => name.startsWith("Material"),
+          (name) => name.startsWith("Relating"),
+          (name) => {
+            const ignore = ["IsGroupedBy", "IsDecomposedBy"];
+            return name.startsWith("Is") && !ignore.includes(name);
+          }
+        ];
+        return attributes;
+      }
+    }
+  );
 
   // Configure table
   attributesTable.expanded = true;
   attributesTable.indentationInText = true;
   attributesTable.preserveStructureOnFilter = preserveStructure.value;
-  
+
   // Add to the DOM
   attributesTableContainer.value.appendChild(attributesTable);
-  
+
   // Store reference to the table
   attributesTableRef.value = attributesTable;
   updateAttributesTableRef.value = updateAttributesTable;
@@ -399,11 +424,13 @@ onMounted(async () => {
     updateAttributesTable({ fragmentIdMap });
   });
 
-  highlighter.events.select.onClear.add(() => updateAttributesTable({ fragmentIdMap: {} }));
+  highlighter.events.select.onClear.add(() =>
+    updateAttributesTable({ fragmentIdMap: {} })
+  );
 
   // Store references
   componentsRef.value = components;
-  fragementsManagerRef.value = fragmentsManager
+  fragementsManagerRef.value = fragmentsManager;
   worldRef.value = world;
   highlighterRef.value = highlighter;
 });
