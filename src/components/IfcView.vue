@@ -2,41 +2,68 @@
   <div class="w-screen h-screen">
     <div id="container" ref="container" class="relative w-full h-full">
       <!-- BIM Panel for IFC Models -->
-      <bim-panel label="IFC Models" class="absolute top-0 left-0">
+      <div label="IFC Models" class="absolute top-0 left-0 text-white bg-black">
+        <n-card
+          title="Control"
+          :segmented="{
+            content: true, // Add a divider between the header and content
+            footer: 'soft' // Add a soft divider between the content and footer
+          }"
+        >
+          <!-- IFC Models Section -->
+          <!-- Custom Importing Section -->
+            <bim-panel-section label="Custom Importing">
+              <NButton
+              text-color="white"
+              color="#2e3338"
+              @click="triggerFileUpload"
+              >
+              Load IFC
+              <input
+              type="file"
+              id="ifc-file-input"
+              accept=".ifc"
+              style="display: none"
+              @change="handleFileUpload"
+              />
+            </NButton>
+          </bim-panel-section>
 
-<bim-panel-section label="Custom Importing">
-  <NButton text-color="white" color="#2e3338" @click="triggerFileUpload">
-    Load IFC
-    <input
-      type="file"
-      id="ifc-file-input"
-      accept=".ifc"
-      style="display: none"
-      @change="handleFileUpload"
-    />
-  </NButton>
-</bim-panel-section>
-<bim-panel-section label="Sample Model">
-  <NButton text-color="white" color="#2e3338" @click="loadSampleModel">
-    Load Sample Model
-  </NButton>
-</bim-panel-section>
-<bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
-  <div ref="modelsList"></div>
-</bim-panel-section>
-<bim-panel-section>
-  <NButton @click="exportGLTF" text-color="white" color="#2e3338">
-    Export GLTF
-  </NButton>
-</bim-panel-section>
-<bim-panel-section>
-  <NButton @click="disposeFragements" text-color="white" color="#2e3338">
-    Dispose Fragements
-  </NButton>
-</bim-panel-section>
+          <!-- Sample Model Section -->
+          <bim-panel-section label="Sample Model">
+            <NButton
+              text-color="white"
+              color="#2e3338"
+              @click="loadSampleModel"
+            >
+              Load Sample Model
+            </NButton>
+          </bim-panel-section>
 
-</bim-panel>
+          <!-- Loaded Models Section -->
+          <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
+            <div ref="modelsList"></div>
+          </bim-panel-section>
 
+          <!-- Export GLTF Section -->
+          <bim-panel-section>
+            <NButton @click="exportGLTF" text-color="white" color="#2e3338">
+              Export GLTF
+            </NButton>
+          </bim-panel-section>
+
+          <!-- Dispose Fragments Section -->
+          <bim-panel-section>
+            <NButton
+              @click="disposeFragments"
+              text-color="white"
+              color="#2e3338"
+            >
+              Dispose Fragments
+            </NButton>
+          </bim-panel-section>
+        </n-card>
+      </div>
       <!-- Entity Attributes Panel -->
       <div :class="{ hidden: !showEntityPanelRef }">
         <bim-panel class="absolute top-0 right-0">
@@ -98,90 +125,91 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import * as WEBIFC from 'web-ifc'
-import * as OBC from '@thatopen/components'
-import * as OBCF from '@thatopen/components-front'
-import * as BUI from '@thatopen/ui'
-import * as BUIC from '@thatopen/ui-obc'
-import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js'
-import { NButton, NCollapse } from 'naive-ui'
+import { ref, onMounted } from "vue";
+import * as WEBIFC from "web-ifc";
+import * as OBC from "@thatopen/components";
+import * as OBCF from "@thatopen/components-front";
+import * as BUI from "@thatopen/ui";
+import * as BUIC from "@thatopen/ui-obc";
+import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
+import { NButton, NCollapse } from "naive-ui";
 
 // Utility functions
 const downloadFile = (blob, fileName) => {
-  const link = document.createElement('a')
-  link.href = URL.createObjectURL(blob)
-  link.download = fileName
-  link.click()
-  URL.revokeObjectURL(link.href)
-}
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(link.href);
+};
 
 const readFile = (file) => {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => resolve(e.target.result)
-    reader.onerror = (e) => reject(e)
-    reader.readAsArrayBuffer(file)
-  })
-}
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = (e) => reject(e);
+    reader.readAsArrayBuffer(file);
+  });
+};
 
 const triggerFileUpload = () => {
-  document.getElementById('ifc-file-input').click()
-}
+  document.getElementById("ifc-file-input").click();
+};
 
 // Refs for DOM elements
-const container = ref(null)
-const modelsList = ref(null)
-const attributesTableContainer = ref(null)
+const container = ref(null);
+const modelsList = ref(null);
+const attributesTableContainer = ref(null);
 
 // Entity panel state
-const preserveStructure = ref(true)
+const preserveStructure = ref(true);
 
 // show the entity panel state
-const showEntityPanelRef = ref(false)
+const showEntityPanelRef = ref(false);
 
 // ThatOpen BIM variables and dependencies
-const componentsRef = ref(null)
-const worldRef = ref(null)
-const highlighterRef = ref(null)
-const last_modelRef = ref(null)
-const attributesTableRef = ref(null)
-const updateAttributesTableRef = ref(null)
-const fragementsManagerRef = ref(null)
+const componentsRef = ref(null);
+const worldRef = ref(null);
+const highlighterRef = ref(null);
+const last_modelRef = ref(null);
+const attributesTableRef = ref(null);
+const updateAttributesTableRef = ref(null);
+const fragementsManagerRef = ref(null);
 
 // Entity attributes panel methods
 const onSearchInput = (e) => {
   if (attributesTableRef.value) {
-    attributesTableRef.value.queryString = e.target.value
+    attributesTableRef.value.queryString = e.target.value;
   }
-}
+};
 
 const disposeFragements = () => {
-  fragementsManagerRef.value.dispose()
-  showEntityPanelRef.value = false
-}
+  fragementsManagerRef.value.dispose();
+  showEntityPanelRef.value = false;
+};
 
 const onPreserveStructureChange = (e) => {
-  preserveStructure.value = e.target.checked
+  preserveStructure.value = e.target.checked;
   if (attributesTableRef.value) {
-    attributesTableRef.value.preserveStructureOnFilter = preserveStructure.value
+    attributesTableRef.value.preserveStructureOnFilter =
+      preserveStructure.value;
   }
-}
+};
 
 const onExportJSON = () => {
   if (attributesTableRef.value) {
-    attributesTableRef.value.downloadData('entities-attributes')
+    attributesTableRef.value.downloadData("entities-attributes");
   }
-}
+};
 
 const onCopyTSV = async () => {
   if (attributesTableRef.value) {
-    await navigator.clipboard.writeText(attributesTableRef.value.tsv)
+    await navigator.clipboard.writeText(attributesTableRef.value.tsv);
     alert(
-      'Table data copied as TSV in clipboard! Try to paste it in a spreadsheet app.'
-    )
+      "Table data copied as TSV in clipboard! Try to paste it in a spreadsheet app."
+    );
   }
-}
+};
 
 const onAttributesChange = (e) => {
   if (updateAttributesTableRef.value) {
@@ -189,35 +217,35 @@ const onAttributesChange = (e) => {
       attributesToInclude: () => {
         const attributes = [
           ...e.target.value,
-          (name) => name.includes('Value'),
-          (name) => name.startsWith('Material'),
-          (name) => name.startsWith('Relating'),
+          (name) => name.includes("Value"),
+          (name) => name.startsWith("Material"),
+          (name) => name.startsWith("Relating"),
           (name) => {
-            const ignore = ['IsGroupedBy', 'IsDecomposedBy']
-            return name.startsWith('Is') && !ignore.includes(name)
+            const ignore = ["IsGroupedBy", "IsDecomposedBy"];
+            return name.startsWith("Is") && !ignore.includes(name);
           }
-        ]
-        return attributes
+        ];
+        return attributes;
       }
-    })
+    });
   }
-}
+};
 
 // Handle file upload
 async function handleFileUpload(event) {
-  const file = event?.target?.files[0]
+  const file = event?.target?.files[0];
   if (!file) {
-    alert('No file selected!')
-    return
+    alert("No file selected!");
+    return;
   }
 
   try {
-    const data = await readFile(file)
-    const buffer = new Uint8Array(data)
-    await loadIFCModel(buffer, file.name)
+    const data = await readFile(file);
+    const buffer = new Uint8Array(data);
+    await loadIFCModel(buffer, file.name);
   } catch (error) {
-    console.error('Error loading IFC file:', error)
-    alert('Failed to load IFC file.')
+    console.error("Error loading IFC file:", error);
+    alert("Failed to load IFC file.");
   }
 }
 
@@ -225,153 +253,153 @@ async function handleFileUpload(event) {
 async function loadSampleModel() {
   try {
     const file = await fetch(
-      'https://thatopen.github.io/engine_ui-components/resources/small.ifc'
-    )
-    const buffer = await file.arrayBuffer()
-    const typedArray = new Uint8Array(buffer)
-    await loadIFCModel(typedArray, 'sample.ifc')
+      "https://thatopen.github.io/engine_ui-components/resources/small.ifc"
+    );
+    const buffer = await file.arrayBuffer();
+    const typedArray = new Uint8Array(buffer);
+    await loadIFCModel(typedArray, "sample.ifc");
   } catch (error) {
-    console.error('Error loading sample IFC file:', error)
-    alert('Failed to load sample IFC file.')
+    console.error("Error loading sample IFC file:", error);
+    alert("Failed to load sample IFC file.");
   }
 }
 
 // Common function to load IFC models
 async function loadIFCModel(buffer, name) {
-  const ifcLoader = componentsRef.value.get(OBC.IfcLoader)
-  const model = await ifcLoader.load(buffer, { name })
-  worldRef.value.scene.three.add(model)
+  const ifcLoader = componentsRef.value.get(OBC.IfcLoader);
+  const model = await ifcLoader.load(buffer, { name });
+  worldRef.value.scene.three.add(model);
 
   // Process entity relations
-  await setupEntityAttributes(model)
+  await setupEntityAttributes(model);
 
-  last_modelRef.value = model
+  last_modelRef.value = model;
 }
 
 // Setup entity attributes
 async function setupEntityAttributes(model) {
-  const indexer = componentsRef.value.get(OBC.IfcRelationsIndexer)
-  await indexer.process(model)
+  const indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
+  await indexer.process(model);
 }
 
 // Export to GLTF
 const exportGLTF = () => {
   if (!last_modelRef.value) {
-    alert('No model loaded to export!')
-    return
+    alert("No model loaded to export!");
+    return;
   }
 
-  const exporter = new GLTFExporter()
+  const exporter = new GLTFExporter();
 
   exporter.parse(
     worldRef.value.scene.three,
     (gltf) => {
       if (gltf instanceof ArrayBuffer) {
-        const glbBlob = new Blob([gltf], { type: 'model/gltf-binary' })
-        downloadFile(glbBlob, 'model.glb')
+        const glbBlob = new Blob([gltf], { type: "model/gltf-binary" });
+        downloadFile(glbBlob, "model.glb");
       }
     },
     (err) => {
-      console.error('Error exporting GLTF:', err)
-      alert('Failed to export model.')
+      console.error("Error exporting GLTF:", err);
+      alert("Failed to export model.");
     },
     {
       trs: true,
       binary: true
     }
-  )
-}
+  );
+};
 
 // Initialize the 3D scene and UI
 onMounted(async () => {
   // Initialize the UI library
-  BUI.Manager.init()
+  BUI.Manager.init();
 
   // Set up the components
-  const components = new OBC.Components()
+  const components = new OBC.Components();
 
   // Set up the scene
-  const worlds = components.get(OBC.Worlds)
-  const world = worlds.create()
+  const worlds = components.get(OBC.Worlds);
+  const world = worlds.create();
 
-  const sceneComponent = new OBC.SimpleScene(components)
-  sceneComponent.setup()
-  world.scene = sceneComponent
+  const sceneComponent = new OBC.SimpleScene(components);
+  sceneComponent.setup();
+  world.scene = sceneComponent;
 
-  const rendererComponent = new OBC.SimpleRenderer(components, container.value)
-  world.renderer = rendererComponent
+  const rendererComponent = new OBC.SimpleRenderer(components, container.value);
+  world.renderer = rendererComponent;
 
-  const cameraComponent = new OBC.SimpleCamera(components)
-  world.camera = cameraComponent
-  world.camera.controls.setLookAt(10, 5.5, 5, -4, -1, -6.5)
+  const cameraComponent = new OBC.SimpleCamera(components);
+  world.camera = cameraComponent;
+  world.camera.controls.setLookAt(10, 5.5, 5, -4, -1, -6.5);
 
   // Handle window resize
-  window.addEventListener('resize', () => {
-    rendererComponent.resize()
-    cameraComponent.updateAspect()
-  })
+  window.addEventListener("resize", () => {
+    rendererComponent.resize();
+    cameraComponent.updateAspect();
+  });
 
   // Add a grid to the scene
-  const viewerGrids = components.get(OBC.Grids)
-  viewerGrids.create(world)
+  const viewerGrids = components.get(OBC.Grids);
+  viewerGrids.create(world);
 
   // Initialize components
-  components.init()
+  components.init();
 
   // Set up the IFC loader
-  const ifcLoader = components.get(OBC.IfcLoader)
-  await ifcLoader.setup()
+  const ifcLoader = components.get(OBC.IfcLoader);
+  await ifcLoader.setup();
 
   // Set up the fragments manager
-  const fragmentsManager = components.get(OBC.FragmentsManager)
+  const fragmentsManager = components.get(OBC.FragmentsManager);
   fragmentsManager.onFragmentsLoaded.add((model) => {
-    showEntityPanelRef.value = true
+    showEntityPanelRef.value = true;
     if (world.scene) {
-      world.scene.three.add(model)
+      world.scene.three.add(model);
     }
-  })
+  });
 
   // Create the models list component
   const [modelsListElement] = BUIC.tables.modelsList({
     components,
     tags: { schema: true, viewDefinition: false },
     actions: { download: false }
-  })
+  });
 
   // Append the models list to the DOM
-  modelsList.value.appendChild(modelsListElement)
+  modelsList.value.appendChild(modelsListElement);
 
   // Configure entity attributes panel
-  const baseStyle = { padding: '0.25rem', borderRadius: '0.25rem' }
+  const baseStyle = { padding: "0.25rem", borderRadius: "0.25rem" };
   const tableDefinition = {
     Entity: (entity) => {
-      let style = {}
+      let style = {};
       if (entity === OBC.IfcCategoryMap[WEBIFC.IFCPROPERTYSET]) {
-        style = { ...baseStyle, backgroundColor: 'purple', color: 'white' }
+        style = { ...baseStyle, backgroundColor: "purple", color: "white" };
       }
-      if (String(entity).includes('IFCWALL')) {
-        style = { ...baseStyle, backgroundColor: 'green', color: 'white' }
+      if (String(entity).includes("IFCWALL")) {
+        style = { ...baseStyle, backgroundColor: "green", color: "white" };
       }
-      return BUI.html`<bim-label style=${BUI.styleMap(style)}>${entity}</bim-label>`
+      return BUI.html`<bim-label style=${BUI.styleMap(style)}>${entity}</bim-label>`;
     },
     PredefinedType: (type) => {
-      const colors = ['#1c8d83', '#3c1c8d', '#386c19', '#837c24']
-      const randomIndex = Math.floor(Math.random() * colors.length)
-      const backgroundColor = colors[randomIndex]
-      const style = { ...baseStyle, backgroundColor, color: 'white' }
-      return BUI.html`<bim-label style=${BUI.styleMap(style)}>${type}</bim-label>`
+      const colors = ["#1c8d83", "#3c1c8d", "#386c19", "#837c24"];
+      const randomIndex = Math.floor(Math.random() * colors.length);
+      const backgroundColor = colors[randomIndex];
+      const style = { ...baseStyle, backgroundColor, color: "white" };
+      return BUI.html`<bim-label style=${BUI.styleMap(style)}>${type}</bim-label>`;
     },
     NominalValue: (value) => {
-      let style = {}
-      if (typeof value === 'boolean' && value === false) {
-        style = { ...baseStyle, backgroundColor: '#b13535', color: 'white' }
+      let style = {};
+      if (typeof value === "boolean" && value === false) {
+        style = { ...baseStyle, backgroundColor: "#b13535", color: "white" };
       }
-      if (typeof value === 'boolean' && value === true) {
-        style = { ...baseStyle, backgroundColor: '#18882c', color: 'white' }
+      if (typeof value === "boolean" && value === true) {
+        style = { ...baseStyle, backgroundColor: "#18882c", color: "white" };
       }
-      return BUI.html`<bim-label style=${BUI.styleMap(style)}>${value}</bim-label>`
+      return BUI.html`<bim-label style=${BUI.styleMap(style)}>${value}</bim-label>`;
     }
-  }
+  };
 
   const [attributesTable, updateAttributesTable] = BUIC.tables.entityAttributes(
     {
@@ -380,53 +408,53 @@ onMounted(async () => {
       tableDefinition,
       attributesToInclude: () => {
         const attributes = [
-          'Name',
-          'ContainedInStructure',
-          'HasProperties',
-          'HasPropertySets',
-          (name) => name.includes('Value'),
-          (name) => name.startsWith('Material'),
-          (name) => name.startsWith('Relating'),
+          "Name",
+          "ContainedInStructure",
+          "HasProperties",
+          "HasPropertySets",
+          (name) => name.includes("Value"),
+          (name) => name.startsWith("Material"),
+          (name) => name.startsWith("Relating"),
           (name) => {
-            const ignore = ['IsGroupedBy', 'IsDecomposedBy']
-            return name.startsWith('Is') && !ignore.includes(name)
+            const ignore = ["IsGroupedBy", "IsDecomposedBy"];
+            return name.startsWith("Is") && !ignore.includes(name);
           }
-        ]
-        return attributes
+        ];
+        return attributes;
       }
     }
-  )
+  );
 
   // Configure table
-  attributesTable.expanded = true
-  attributesTable.indentationInText = true
-  attributesTable.preserveStructureOnFilter = preserveStructure.value
+  attributesTable.expanded = true;
+  attributesTable.indentationInText = true;
+  attributesTable.preserveStructureOnFilter = preserveStructure.value;
 
   // Add to the DOM
-  attributesTableContainer.value.appendChild(attributesTable)
+  attributesTableContainer.value.appendChild(attributesTable);
 
   // Store reference to the table
-  attributesTableRef.value = attributesTable
-  updateAttributesTableRef.value = updateAttributesTable
+  attributesTableRef.value = attributesTable;
+  updateAttributesTableRef.value = updateAttributesTable;
 
   // Setup highlighter
-  const highlighter = components.get(OBCF.Highlighter)
-  highlighter.setup({ world })
+  const highlighter = components.get(OBCF.Highlighter);
+  highlighter.setup({ world });
 
   highlighter.events.select.onHighlight.add((fragmentIdMap) => {
-    updateAttributesTable({ fragmentIdMap })
-  })
+    updateAttributesTable({ fragmentIdMap });
+  });
 
   highlighter.events.select.onClear.add(() =>
     updateAttributesTable({ fragmentIdMap: {} })
-  )
+  );
 
   // Store references
-  componentsRef.value = components
-  fragementsManagerRef.value = fragmentsManager
-  worldRef.value = world
-  highlighterRef.value = highlighter
-})
+  componentsRef.value = components;
+  fragementsManagerRef.value = fragmentsManager;
+  worldRef.value = world;
+  highlighterRef.value = highlighter;
+});
 </script>
 
 <style scoped>
