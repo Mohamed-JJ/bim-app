@@ -30,4 +30,5 @@ export function triggerFileUpload() {
   } else {
     console.error("File input element not found");
   }
+  // console.log("here at trigger")
 }

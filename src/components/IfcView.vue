@@ -46,10 +46,11 @@
             </div>
           </bim-panel-section>
           <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
-            <div ref="modelsListElementsRef">
-            </div>
-            <!-- <div v-for="(model, key) in modelsListElementsRef" :key="key" class="text-white" v-html="model">
+            <!-- <div ref="modelsListElementsRef">
             </div> -->
+            <div v-for="(model, key) in modelsListElementsRef" :key="key" class="text-white">
+              {{model}}
+            </div>
           </bim-panel-section>
 
           <!-- Export GLTF Section -->
@@ -160,6 +161,7 @@ const readFile = (file) => {
 };
 
 const triggerFileUpload = () => {
+  console.log("here at triiger file upload")
   document.getElementById("ifc-file-input").click();
 };
 
@@ -365,12 +367,12 @@ onMounted(async () => {
     if (world.scene) {
       world.scene.three.add(model);
     }
-    const [modelsListElement] = BUIC.tables.modelsList({
+    const [modelsListElements] = BUIC.tables.modelsList({
     components,
     tags: { schema: true, viewDefinition: false },
     actions: { download: false }
   });
-    console.log("loaded a new element", modelsListElement)
+    console.log("loaded a new element", modelsListElements)
   });
 
   // Create the models list component
