@@ -42,7 +42,14 @@
 
           <!-- Loaded Models Section -->
           <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
-            <div ref="modelsList"></div>
+            <div ref="modelsList">
+            </div>
+          </bim-panel-section>
+          <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
+            <div ref="modelsListElementsRef">
+            </div>
+            <!-- <div v-for="(model, key) in modelsListElementsRef" :key="key" class="text-white" v-html="model">
+            </div> -->
           </bim-panel-section>
 
           <!-- Export GLTF Section -->
@@ -159,6 +166,7 @@ const triggerFileUpload = () => {
 // Refs for DOM elements
 const container = ref(null);
 const modelsList = ref(null);
+const modelsListElementsRef = ref([]);
 const attributesTableContainer = ref(null);
 
 // Entity panel state
@@ -357,6 +365,12 @@ onMounted(async () => {
     if (world.scene) {
       world.scene.three.add(model);
     }
+    const [modelsListElement] = BUIC.tables.modelsList({
+    components,
+    tags: { schema: true, viewDefinition: false },
+    actions: { download: false }
+  });
+    console.log("loaded a new element", modelsListElement)
   });
 
   // Create the models list component
@@ -367,7 +381,11 @@ onMounted(async () => {
   });
 
   // Append the models list to the DOM
+  // console.log(modelsList)
+  modelsListElementsRef.value = modelsListElement
   modelsList.value.appendChild(modelsListElement);
+  console.log("models list:", modelsListElementsRef.value)
+  console.log("models lists:", modelsList.value)
 
   // Configure entity attributes panel
   const baseStyle = { padding: "0.25rem", borderRadius: "0.25rem" };
