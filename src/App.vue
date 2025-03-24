@@ -1,12 +1,12 @@
 <template>
-  <IfcViewer />
+  <IfcView />
 </template>
 
 <script setup>
 import { ref } from "vue";
 import IfcViewer from "./components/IfcViewer.vue";
 import IfcView from "./components/IfcView.vue";
-import { NCollapse, NCollapseItem, NButton } from 'naive-ui';
+import { NCollapse, NCollapseItem, NButton } from "naive-ui";
 </script>
 
 <style scoped>

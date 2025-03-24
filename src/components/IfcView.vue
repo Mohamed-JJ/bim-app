@@ -2,7 +2,7 @@
   <div class="w-screen h-screen">
     <div id="container" ref="container" class="relative w-full h-full">
       <!-- BIM Panel for IFC Models -->
-      <div label="IFC Models" class="absolute top-0 left-0 text-white bg-black">
+      <div label="IFC Models" class="absolute top-0 left-0 text-black bg-white">
         <n-card
           title="Control"
           :segmented="{
@@ -10,58 +10,122 @@
             footer: 'soft' // Add a soft divider between the content and footer
           }"
         >
+          <n-collapse arrow-placement="right" class="border-2 border-white">
+            <n-collapse-item title="load IFC Models" name="1" :headerClass="headerClass" :contentClass="contentClass">
+              <div>
+                <NButton
+                  text-color="white"
+                  color="#2e3338"
+                  @click="triggerFileUpload"
+                >
+                  Load IFC
+                  <input
+                    type="file"
+                    id="ifc-file-input"
+                    accept=".ifc"
+                    style="display: none"
+                    @change="handleFileUpload"
+                  />
+                </NButton>
+              </div>
+            </n-collapse-item>
+            <n-collapse-item title="load Sample Model" name="2">
+              <div>
+                <NButton
+                  text-color="white"
+                  color="#2e3338"
+                  @click="loadSampleModel"
+                >
+                  Load Sample Model
+                </NButton>
+              </div>
+            </n-collapse-item>
+            <n-collapse-item title="models list" name="3">
+              <div class="text-black w-full border-2 border-white">
+                <div v-if="loadedModelsList.length === 0">
+                  <p>no loaded models yet</p>
+                </div>
+                <div
+                  v-else
+                  v-for="(model, key) in loadedModelsList"
+                  :key="key"
+                  class="text-black"
+                >
+                  {{ model.uuid }}
+                  <button
+                    class="p-3 rounded-md bg-black hover:cursor-pointer"
+                    @click="() => handleVisibilityClick(model)"
+                  ></button>
+                  <button
+                    class="p-3 rounded-md bg-purple-400 hover:cursor-pointer"
+                    @click="() => disposeFragementGroup(model, key)"
+                  ></button>
+                </div>
+              </div>
+            </n-collapse-item>
+            <n-collapse-item title="export gltf" name="4">
+              <div>
+                <NButton @click="exportGLTF" text-color="white" color="#2e3338">
+                  Export GLTF
+                </NButton>
+              </div>
+            </n-collapse-item>
+            <n-collapse-item title="dispose fragments" name="5">
+              <div>
+                <NButton
+                  @click="disposeFragments"
+                  text-color="white"
+                  color="#2e3338"
+                >
+                  Dispose Fragments
+                </NButton>
+              </div>
+            </n-collapse-item>
+          </n-collapse>
           <!-- IFC Models Section -->
           <!-- Custom Importing Section -->
-            <bim-panel-section label="Custom Importing">
-              <NButton
-              text-color="white"
-              color="#2e3338"
-              @click="triggerFileUpload"
-              >
-              Load IFC
-              <input
-              type="file"
-              id="ifc-file-input"
-              accept=".ifc"
-              style="display: none"
-              @change="handleFileUpload"
-              />
-            </NButton>
-          </bim-panel-section>
+          <!-- <bim-panel-section label="Custom Importing"> </bim-panel-section> -->
 
           <!-- Sample Model Section -->
-          <bim-panel-section label="Sample Model">
-            <NButton
-              text-color="white"
-              color="#2e3338"
-              @click="loadSampleModel"
-            >
-              Load Sample Model
-            </NButton>
-          </bim-panel-section>
+          <!-- <bim-panel-section label="Sample Model"> -->
+          <!-- <div class="text-white w-full border-2 border-white">
+              <p>models list</p>
+              <div v-if="loadedModelsList.length === 0">
+                <p class="text-white">no loaded models yet</p>
+              </div>
+              <div
+                v-else
+                v-for="(model, key) in loadedModelsList"
+                :key="key"
+                class="text-white"
+              >
+                {{ model.uuid }}
+                <button
+                  class="p-3 rounded-md bg-white hover:cursor-pointer"
+                  @click="() => handleVisibilityClick(model)"
+                ></button>
+                <button
+                  class="p-3 rounded-md bg-purple-400 hover:cursor-pointer"
+                  @click="() => disposeFragementGroup(model, key)"
+                ></button>
+              </div>
+            </div> -->
+          <!-- </bim-panel-section> -->
 
           <!-- Loaded Models Section -->
-          <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
-            <div ref="modelsList">
-            </div>
-          </bim-panel-section>
-          <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
-            <!-- <div ref="modelsListElementsRef">
-            </div> -->
-            <div v-for="(model, key) in modelsListElementsRef" :key="key" class="text-white">
-              {{model}}
-            </div>
-          </bim-panel-section>
+          <!-- <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
+            <div ref="modelsList"></div>
+          </bim-panel-section> -->
 
           <!-- Export GLTF Section -->
-          <bim-panel-section>
+          <!-- <bim-panel-section>
             <NButton @click="exportGLTF" text-color="white" color="#2e3338">
               Export GLTF
             </NButton>
-          </bim-panel-section>
+          </bim-panel-section> -->
 
           <!-- Dispose Fragments Section -->
-          <bim-panel-section>
+          <!-- <bim-panel-section>
             <NButton
               @click="disposeFragments"
               text-color="white"
@@ -69,7 +133,7 @@
             >
               Dispose Fragments
             </NButton>
-          </bim-panel-section>
+          </bim-panel-section> -->
         </n-card>
       </div>
       <!-- Entity Attributes Panel -->
@@ -140,8 +204,15 @@ import * as OBCF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui";
 import * as BUIC from "@thatopen/ui-obc";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
-import { NButton, NCollapse } from "naive-ui";
-
+import { NButton, NCollapse, NCollapseItem, collapseItemProps } from "naive-ui";
+// type collapseItemProp = NonNullable<collapseItemProps['themeOverrides']>
+const headerClass = "custom-header";
+const contentClass = "custom-content";
+// const collapseItemProp: SelectThemeOverrides  = {
+// peers: {
+//   InternalSelection
+// }
+// }
 // Utility functions
 const downloadFile = (blob, fileName) => {
   const link = document.createElement("a");
@@ -160,14 +231,20 @@ const readFile = (file) => {
   });
 };
 
+const handleVisibilityClick = (model) => {
+  console.log("Clicked on the visibility button");
+  model.visible = !model.visible; // Update the visibility state
+};
+
 const triggerFileUpload = () => {
-  console.log("here at triiger file upload")
+  console.log("here at triiger file upload");
   document.getElementById("ifc-file-input").click();
 };
 
 // Refs for DOM elements
 const container = ref(null);
 const modelsList = ref(null);
+const loadedModelsList = ref([]);
 const modelsListElementsRef = ref([]);
 const attributesTableContainer = ref(null);
 
@@ -292,6 +369,14 @@ async function setupEntityAttributes(model) {
   await indexer.process(model);
 }
 
+function disposeFragementGroup(group, key) {
+  fragementsManagerRef.value.disposeGroup(group);
+  // console.log("deleting at index ", key)
+  loadedModelsList.value = loadedModelsList.value.filter(
+    (_, index) => index !== key
+  );
+}
+
 // Export to GLTF
 const exportGLTF = () => {
   if (!last_modelRef.value) {
@@ -368,11 +453,11 @@ onMounted(async () => {
       world.scene.three.add(model);
     }
     const [modelsListElements] = BUIC.tables.modelsList({
-    components,
-    tags: { schema: true, viewDefinition: false },
-    actions: { download: false }
-  });
-    console.log("loaded a new element", modelsListElements)
+      components,
+      tags: { schema: true, viewDefinition: false },
+      actions: { download: false }
+    });
+    // console.log("loaded a new element", modelsListElements)
   });
 
   // Create the models list component
@@ -384,10 +469,8 @@ onMounted(async () => {
 
   // Append the models list to the DOM
   // console.log(modelsList)
-  modelsListElementsRef.value = modelsListElement
-  modelsList.value.appendChild(modelsListElement);
-  console.log("models list:", modelsListElementsRef.value)
-  console.log("models lists:", modelsList.value)
+  modelsListElementsRef.value = modelsListElement;
+  // modelsList.value.appendChild(modelsListElement); // removed because the functionality i added was good enough, might revert back to it in the future
 
   // Configure entity attributes panel
   const baseStyle = { padding: "0.25rem", borderRadius: "0.25rem" };
@@ -450,6 +533,18 @@ onMounted(async () => {
   attributesTable.indentationInText = true;
   attributesTable.preserveStructureOnFilter = preserveStructure.value;
 
+  fragmentsManager.onFragmentsLoaded.add((model) => {
+    // console.log("loaded something :", model)
+    loadedModelsList.value.push(model);
+    console.log("in memoryy models list", loadedModelsList.value);
+    loadedModelsList.value.forEach((value) =>
+      console.log(
+        "the iteration from the loaded list",
+        value.uuid,
+        value.visible
+      )
+    );
+  });
   // Add to the DOM
   attributesTableContainer.value.appendChild(attributesTable);
 
@@ -482,5 +577,14 @@ onMounted(async () => {
   width: 100%;
   height: 100vh;
   position: relative;
+}
+.custom-header {
+  color: #ff4757; /* Red header text */
+  font-weight: bold;
+}
+
+.custom-content {
+  color: #3498db; /* Blue content text */
+  padding: 8px;
 }
 </style>
