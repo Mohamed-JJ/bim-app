@@ -2,16 +2,21 @@
   <div class="w-screen h-screen">
     <div id="container" ref="container" class="relative w-full h-full">
       <!-- BIM Panel for IFC Models -->
-      <div label="IFC Models" class="absolute top-0 left-0 text-black bg-white">
-        <n-card
+      <div class="absolute top-0 left-0 text-black bg-white rounded-md">
+        <!-- <n-card
           title="Control"
           :segmented="{
             content: true, // Add a divider between the header and content
             footer: 'soft' // Add a soft divider between the content and footer
           }"
-        >
-          <n-collapse arrow-placement="right" class="border-2 border-white">
-            <n-collapse-item title="load IFC Models" name="1" :headerClass="headerClass" :contentClass="contentClass">
+        > -->
+          <n-collapse arrow-placement="right" class="p-3">
+            <n-collapse-item
+              title="load IFC Models"
+              name="1"
+              :headerClass="headerClass"
+              :contentClass="contentClass"
+            >
               <div>
                 <NButton
                   text-color="white"
@@ -49,17 +54,27 @@
                   v-else
                   v-for="(model, key) in loadedModelsList"
                   :key="key"
-                  class="text-black"
+                  class="text-black flex gap-3 items-center py-2 px-3 rounded-md hover:bg-gray-200 duration-200"
                 >
                   {{ model.uuid }}
                   <button
-                    class="p-3 rounded-md bg-black hover:cursor-pointer"
+                    class="flex items-center justify-center rounded-md hover:cursor-pointer hover:scale-125 duration-200"
                     @click="() => handleVisibilityClick(model)"
-                  ></button>
+                  >
+                    <n-icon size="20">
+                      <EyeOffOutline />
+                    </n-icon>
+                  </button>
                   <button
-                    class="p-3 rounded-md bg-purple-400 hover:cursor-pointer"
+                    class="flex items-center justify-center rounded-md hover:cursor-pointer hover:scale-125 duration-200"
                     @click="() => disposeFragementGroup(model, key)"
-                  ></button>
+                  >
+                    <n-icon size="20">
+                      <div class="">
+                        <TrashBin />
+                      </div>
+                    </n-icon>
+                  </button>
                 </div>
               </div>
             </n-collapse-item>
@@ -134,7 +149,7 @@
               Dispose Fragments
             </NButton>
           </bim-panel-section> -->
-        </n-card>
+        <!-- </n-card> -->
       </div>
       <!-- Entity Attributes Panel -->
       <div :class="{ hidden: !showEntityPanelRef }">
@@ -204,7 +219,15 @@ import * as OBCF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui";
 import * as BUIC from "@thatopen/ui-obc";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
-import { NButton, NCollapse, NCollapseItem, collapseItemProps } from "naive-ui";
+import {
+  NButton,
+  NCollapse,
+  NCollapseItem,
+  collapseItemProps,
+  NIcon
+} from "naive-ui";
+import { EyeOffOutline, TrashBin } from "@vicons/ionicons5";
+
 // type collapseItemProp = NonNullable<collapseItemProps['themeOverrides']>
 const headerClass = "custom-header";
 const contentClass = "custom-content";
