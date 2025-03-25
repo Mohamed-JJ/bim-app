@@ -11,95 +11,104 @@
           }"
         > -->
         <n-collapse arrow-placement="right" class="p-3">
-          <n-collapse-item
-            title="load IFC Models"
-            name="1"
-            :headerClass="headerClass"
-            :contentClass="contentClass"
-          >
-            <div>
-              <NButton
-                text-color="white"
-                color="#2e3338"
-                @click="triggerFileUpload"
+          <n-collapse-item title="control panel">
+            <n-collapse arrow-placement="right" class="p-3">
+              <n-collapse-item
+                title="load IFC Models"
+                name="1"
+                :headerClass="headerClass"
+                :contentClass="contentClass"
               >
-                Load IFC
-                <input
-                  type="file"
-                  id="ifc-file-input"
-                  accept=".ifc"
-                  style="display: none"
-                  @change="handleFileUpload"
-                />
-              </NButton>
-            </div>
-          </n-collapse-item>
-          <n-collapse-item title="load Sample Model" name="2">
-            <div>
-              <NButton
-                text-color="white"
-                color="#2e3338"
-                @click="loadSampleModel"
-              >
-                Load Sample Model
-              </NButton>
-            </div>
-          </n-collapse-item>
-          <n-collapse-item title="models list" name="3">
-            <div class="text-black w-full border-2 border-white">
-              <div v-if="loadedModelsList.length === 0">
-                <p>no loaded models yet</p>
-              </div>
-              <div
-                v-else
-                v-for="(model, key) in loadedModelsList"
-                :key="key"
-                class="text-black flex gap-3 items-center py-2 px-3 rounded-md hover:bg-gray-200 duration-200"
-              >
-                {{ model.uuid }}
-                <button
-                  class="flex items-center justify-center rounded-md hover:cursor-pointer hover:scale-125 duration-200"
-                  @click="() => handleVisibilityClick(model)"
-                >
-                  <n-icon v-if="model.visible" size="20">
-                    <EyeOffOutline />
-                  </n-icon>
-                  <n-icon v-else size="20">
-                    <EyeOutline />
-                  </n-icon>
-                </button>
-                <button
-                  class="flex items-center justify-center rounded-md hover:cursor-pointer hover:scale-125 duration-200"
-                  @click="() => disposeFragementGroup(model, key)"
-                >
-                  <n-icon size="20">
-                    <div class="">
-                      <TrashBin />
-                    </div>
-                  </n-icon>
-                </button>
-              </div>
-            </div>
-          </n-collapse-item>
-          <n-collapse-item title="export gltf" name="4">
-            <div>
-              <NButton @click="exportGLTF" text-color="white" color="#2e3338">
-                Export GLTF
-              </NButton>
-            </div>
-          </n-collapse-item>
-          <n-collapse-item title="dispose fragments" name="5">
-            <div>
-              <NButton
-                @click="disposeFragments"
-                text-color="white"
-                color="#2e3338"
-              >
-                Dispose Fragments
-              </NButton>
-            </div>
+                <div>
+                  <NButton
+                    text-color="white"
+                    color="#2e3338"
+                    @click="triggerFileUpload"
+                  >
+                    Load IFC
+                    <input
+                      type="file"
+                      id="ifc-file-input"
+                      accept=".ifc"
+                      style="display: none"
+                      @change="handleFileUpload"
+                    />
+                  </NButton>
+                </div>
+              </n-collapse-item>
+              <n-collapse-item title="load Sample Model" name="2">
+                <div>
+                  <NButton
+                    text-color="white"
+                    color="#2e3338"
+                    @click="loadSampleModel"
+                  >
+                    Load Sample Model
+                  </NButton>
+                </div>
+              </n-collapse-item>
+              <n-collapse-item title="models list" name="3">
+                <div class="text-black w-full border-2 border-white">
+                  <div v-if="loadedModelsList.length === 0">
+                    <p>no loaded models yet</p>
+                  </div>
+                  <div
+                    v-else
+                    v-for="(model, key) in loadedModelsList"
+                    :key="key"
+                    class="text-black flex gap-3 items-center py-2 px-3 rounded-md hover:bg-gray-200 duration-200"
+                  >
+                    {{ model.uuid }}
+                    <button
+                      class="flex items-center justify-center rounded-md hover:cursor-pointer hover:scale-125 duration-200"
+                      @click="() => handleVisibilityClick(model)"
+                    >
+                      <n-icon v-if="model.visible" size="20">
+                        <EyeOffOutline />
+                      </n-icon>
+                      <n-icon v-else size="20">
+                        <EyeOutline />
+                      </n-icon>
+                    </button>
+                    <button
+                      class="flex items-center justify-center rounded-md hover:cursor-pointer hover:scale-125 duration-200"
+                      @click="() => disposeFragementGroup(model, key)"
+                    >
+                      <n-icon size="20">
+                        <div class="">
+                          <TrashBin />
+                        </div>
+                      </n-icon>
+                    </button>
+                  </div>
+                </div>
+              </n-collapse-item>
+              <n-collapse-item title="export gltf" name="4">
+                <div>
+                  <NButton
+                    @click="exportGLTF"
+                    text-color="white"
+                    color="#2e3338"
+                  >
+                    Export GLTF
+                  </NButton>
+                </div>
+              </n-collapse-item>
+              <n-collapse-item title="dispose fragments" name="5">
+                <div>
+                  <NButton
+                    @click="disposeFragments"
+                    text-color="white"
+                    color="#2e3338"
+                  >
+                    Dispose Fragments
+                  </NButton>
+                </div>
+              </n-collapse-item>
+            </n-collapse>
           </n-collapse-item>
         </n-collapse>
+
         <!-- IFC Models Section -->
         <!-- Custom Importing Section -->
         <!-- <bim-panel-section label="Custom Importing"> </bim-panel-section> -->
@@ -463,6 +472,8 @@ onMounted(async () => {
   // Add a grid to the scene
   const viewerGrids = components.get(OBC.Grids);
   viewerGrids.create(world);
+
+  // world.scene.three.background = null; // can chang the color of the background with this lne right here
 
   // Initialize components
   components.init();
