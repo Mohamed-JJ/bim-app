@@ -105,28 +105,30 @@
       <!-- Entity Attributes Panel -->
       <!-- <div :class="{ hidden: !showEntityPanelRef }"> -->
       <div>
-        <div class="absolute top-0 right-0 bg-white rounded-md flex gap-3">
+        <div class="absolute top-0 right-0 bg-white rounded-md flex gap-3 p-2">
           <div>
-            <p class="text-center">Entity Attributes</p>
+            <p class="text-center font-semibold">Entity Attributes</p>
             <div
               style="display: flex; gap: 0.5rem; justify-content: space-between"
             >
-              <div style="display: flex; gap: 0.5rem">
+              <div class="flex gap-2 items-center grow">
+                <n-icon size="20">
+                  <SearchIcon />
+                </n-icon>
                 <n-input
                   @update:value="onSearchInput"
                   type="text"
                   placeholder="Search"
-                  debounce="250"
-                />
+                  size="small"
+                >
+                </n-input>
                 <n-checkbox
                   @update:checked="onPreserveStructureChange"
-                  placeholder="Preserve structure"
-                  type="checkbox"
                   v-model:checked="preserveStructure"
-
-                >Preserve structure</n-checkbox>
+                  ><p class="">Preserve structure</p></n-checkbox
+                >
               </div>
-              <div style="display: flex; gap: 0.5rem">
+              <div class="flex gap-2 items-center">
                 <bim-dropdown @change="onAttributesChange" multiple>
                   <bim-option label="Name" checked></bim-option>
                   <bim-option label="ContainedInStructure" checked></bim-option>
@@ -143,18 +145,39 @@
                   <bim-option label="Prefix"></bim-option>
                   <bim-option label="LongName"></bim-option>
                 </bim-dropdown>
-                <bim-button
-                  @click="onCopyTSV"
-                  icon="solar:copy-bold"
-                  tooltip-title="Copy TSV"
-                  tooltip-text="Copy the table contents as tab separated text values, so you can copy them into a spreadsheet."
-                ></bim-button>
-                <bim-button
-                  @click="onExportJSON"
-                  icon="ph:export-fill"
-                  tooltip-title="Export JSON"
-                  tooltip-text="Download the table contents as a JSON file."
-                ></bim-button>
+                <n-tooltip trigger="hover">
+                  <template #trigger>
+                    <n-button
+                      @click="onCopyTSV"
+                      icon="solar:copy-bold"
+                      tooltip-title="Copy TSV"
+                      tooltip-text="Copy the table contents as tab separated text values, so you can copy them into a spreadsheet."
+                    >
+                      <n-icon size="20">
+                        <CopyIcon />
+                      </n-icon>
+                    </n-button>
+                  </template>
+                  <h1 class="font-semibold">Copy TSV</h1>
+                  <p>
+                    Copy the table contents as tab separated text values, so you
+                    can copy them into a spreadsheet.
+                  </p>
+                </n-tooltip>
+                <n-tooltip trigger="hover">
+                  <template #trigger>
+                    <n-button
+                      @click="onExportJSON"
+                      icon="ph:export-fill"
+                      tooltip-title="Export JSON"
+                      tooltip-text="Download the table contents as a JSON file."
+                    >
+                      <n-icon size="20">
+                        <DownloadIcon />
+                      </n-icon>
+                    </n-button>
+                  </template>
+                </n-tooltip>
               </div>
             </div>
             <div ref="attributesTableContainer"></div>
@@ -182,9 +205,16 @@ import {
   NCheckbox,
   NSelect,
   NButton,
-  NTooltip,
+  NTooltip
 } from "naive-ui";
-import { EyeOffOutline, TrashBin, EyeOutline } from "@vicons/ionicons5";
+import {
+  EyeOffOutline,
+  TrashBin,
+  EyeOutline,
+  SearchOutline as SearchIcon,
+  CopyOutline as CopyIcon,
+  DownloadOutline as DownloadIcon
+} from "@vicons/ionicons5";
 
 // type collapseItemProp = NonNullable<collapseItemProps['themeOverrides']>
 const headerClass = "custom-header";
