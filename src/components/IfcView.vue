@@ -164,19 +164,21 @@
         <!-- </n-card> -->
       </div>
       <!-- Entity Attributes Panel -->
-      <div :class="{ hidden: !showEntityPanelRef }">
-        <bim-panel class="absolute top-0 right-0">
-          <bim-panel-section label="Entity Attributes" fixed>
+      <!-- <div :class="{ hidden: !showEntityPanelRef }"> -->
+      <div>
+        <div class="absolute top-0 right-0 bg-white rounded-md flex gap-3">
+          <div>
+            <p class="text-center">Entity Attributes</p>
             <div
               style="display: flex; gap: 0.5rem; justify-content: space-between"
             >
               <div style="display: flex; gap: 0.5rem">
-                <bim-text-input
-                  @input="onSearchInput"
-                  type="search"
+                <n-input
+                  @update:value="onSearchInput"
+                  type="text"
                   placeholder="Search"
                   debounce="250"
-                ></bim-text-input>
+                />
                 <bim-checkbox
                   @change="onPreserveStructureChange"
                   label="Preserve Structure"
@@ -216,8 +218,8 @@
               </div>
             </div>
             <div ref="attributesTableContainer"></div>
-          </bim-panel-section>
-        </bim-panel>
+          </div>
+        </div>
       </div>
       <!-- the original entity table that is in the ui -->
       <!-- <div :class="{ hidden: !showEntityPanelRef }">
@@ -288,11 +290,15 @@ import * as BUI from "@thatopen/ui";
 import * as BUIC from "@thatopen/ui-obc";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import {
-  NButton,
+  NCard,
   NCollapse,
   NCollapseItem,
-  collapseItemProps,
-  NIcon
+  NInput,
+  NIcon,
+  NCheckbox,
+  NSelect,
+  NButton,
+  NTooltip
 } from "naive-ui";
 import { EyeOffOutline, TrashBin, EyeOutline } from "@vicons/ionicons5";
 
@@ -357,9 +363,17 @@ const fragementsManagerRef = ref(null);
 // Entity attributes panel methods
 const onSearchInput = (e) => {
   if (attributesTableRef.value) {
-    attributesTableRef.value.queryString = e.target.value;
+    attributesTableRef.value.queryString = e;
   }
 };
+
+// the old serach handler function
+// const onSearchInput = (e) => {
+//   if (attributesTableRef.value) {
+//     console.log(e)
+//     attributesTableRef.value.queryString = e;
+//   }
+// };
 
 const disposeFragements = () => {
   fragementsManagerRef.value.dispose();
@@ -650,10 +664,10 @@ onMounted(async () => {
   highlighter.zoomToSelection = true; // to zoom the the selected part of the model
 
   highlighter.events.select.onHighlight.add((fragmentIdMap) => {
-    const objectKeys = Object.keys(fragmentIdMap)
-    console.log("the highlighter consoles this :", objectKeys, fragmentIdMap)
+    const objectKeys = Object.keys(fragmentIdMap);
+    console.log("the highlighter consoles this :", objectKeys, fragmentIdMap);
     updateAttributesTable({ fragmentIdMap });
-    console.log(attributesTable)
+    console.log(attributesTable);
   });
 
   highlighter.events.select.onClear.add(() =>
