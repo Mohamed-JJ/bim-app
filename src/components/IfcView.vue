@@ -3,13 +3,6 @@
     <div id="container" ref="container" class="relative w-full h-full">
       <!-- BIM Panel for IFC Models -->
       <div class="absolute top-0 left-0 text-black bg-white rounded-md">
-        <!-- <n-card
-          title="Control"
-          :segmented="{
-            content: true, // Add a divider between the header and content
-            footer: 'soft' // Add a soft divider between the content and footer
-          }"
-        > -->
         <n-collapse arrow-placement="right" class="p-3">
           <n-collapse-item title="control panel">
             <n-collapse arrow-placement="right" class="p-3">
@@ -108,60 +101,6 @@
             </n-collapse>
           </n-collapse-item>
         </n-collapse>
-
-        <!-- IFC Models Section -->
-        <!-- Custom Importing Section -->
-        <!-- <bim-panel-section label="Custom Importing"> </bim-panel-section> -->
-
-        <!-- Sample Model Section -->
-        <!-- <bim-panel-section label="Sample Model"> -->
-        <!-- <div class="text-white w-full border-2 border-white">
-              <p>models list</p>
-              <div v-if="loadedModelsList.length === 0">
-                <p class="text-white">no loaded models yet</p>
-              </div>
-              <div
-                v-else
-                v-for="(model, key) in loadedModelsList"
-                :key="key"
-                class="text-white"
-              >
-                {{ model.uuid }}
-                <button
-                  class="p-3 rounded-md bg-white hover:cursor-pointer"
-                  @click="() => handleVisibilityClick(model)"
-                ></button>
-                <button
-                  class="p-3 rounded-md bg-purple-400 hover:cursor-pointer"
-                  @click="() => disposeFragementGroup(model, key)"
-                ></button>
-              </div>
-            </div> -->
-        <!-- </bim-panel-section> -->
-
-        <!-- Loaded Models Section -->
-        <!-- <bim-panel-section icon="mage:box-3d-fill" label="Loaded Models">
-            <div ref="modelsList"></div>
-          </bim-panel-section> -->
-
-        <!-- Export GLTF Section -->
-        <!-- <bim-panel-section>
-            <NButton @click="exportGLTF" text-color="white" color="#2e3338">
-              Export GLTF
-            </NButton>
-          </bim-panel-section> -->
-
-        <!-- Dispose Fragments Section -->
-        <!-- <bim-panel-section>
-            <NButton
-              @click="disposeFragments"
-              text-color="white"
-              color="#2e3338"
-            >
-              Dispose Fragments
-            </NButton>
-          </bim-panel-section> -->
-        <!-- </n-card> -->
       </div>
       <!-- Entity Attributes Panel -->
       <!-- <div :class="{ hidden: !showEntityPanelRef }"> -->
@@ -179,12 +118,13 @@
                   placeholder="Search"
                   debounce="250"
                 />
-                <bim-checkbox
-                  @change="onPreserveStructureChange"
-                  label="Preserve Structure"
-                  inverted
-                  :checked="preserveStructure"
-                ></bim-checkbox>
+                <n-checkbox
+                  @update:checked="onPreserveStructureChange"
+                  placeholder="Preserve structure"
+                  type="checkbox"
+                  v-model:checked="preserveStructure"
+
+                >Preserve structure</n-checkbox>
               </div>
               <div style="display: flex; gap: 0.5rem">
                 <bim-dropdown @change="onAttributesChange" multiple>
@@ -221,62 +161,6 @@
           </div>
         </div>
       </div>
-      <!-- the original entity table that is in the ui -->
-      <!-- <div :class="{ hidden: !showEntityPanelRef }">
-        <bim-panel class="absolute top-0 right-0">
-          <bim-panel-section label="Entity Attributes" fixed>
-            <div
-              style="display: flex; gap: 0.5rem; justify-content: space-between"
-            >
-              <div style="display: flex; gap: 0.5rem">
-                <bim-text-input
-                  @input="onSearchInput"
-                  type="search"
-                  placeholder="Search"
-                  debounce="250"
-                ></bim-text-input>
-                <bim-checkbox
-                  @change="onPreserveStructureChange"
-                  label="Preserve Structure"
-                  inverted
-                  :checked="preserveStructure"
-                ></bim-checkbox>
-              </div>
-              <div style="display: flex; gap: 0.5rem">
-                <bim-dropdown @change="onAttributesChange" multiple>
-                  <bim-option label="Name" checked></bim-option>
-                  <bim-option label="ContainedInStructure" checked></bim-option>
-                  <bim-option label="ForLayerSet"></bim-option>
-                  <bim-option label="LayerThickness"></bim-option>
-                  <bim-option label="HasProperties" checked></bim-option>
-                  <bim-option label="HasAssociations"></bim-option>
-                  <bim-option label="HasAssignments"></bim-option>
-                  <bim-option label="HasPropertySets" checked></bim-option>
-                  <bim-option label="PredefinedType"></bim-option>
-                  <bim-option label="Quantities"></bim-option>
-                  <bim-option label="ReferencedSource"></bim-option>
-                  <bim-option label="Identification"></bim-option>
-                  <bim-option label="Prefix"></bim-option>
-                  <bim-option label="LongName"></bim-option>
-                </bim-dropdown>
-                <bim-button
-                  @click="onCopyTSV"
-                  icon="solar:copy-bold"
-                  tooltip-title="Copy TSV"
-                  tooltip-text="Copy the table contents as tab separated text values, so you can copy them into a spreadsheet."
-                ></bim-button>
-                <bim-button
-                  @click="onExportJSON"
-                  icon="ph:export-fill"
-                  tooltip-title="Export JSON"
-                  tooltip-text="Download the table contents as a JSON file."
-                ></bim-button>
-              </div>
-            </div>
-            <div ref="attributesTableContainer"></div>
-          </bim-panel-section>
-        </bim-panel>
-      </div> -->
     </div>
   </div>
 </template>
@@ -298,7 +182,7 @@ import {
   NCheckbox,
   NSelect,
   NButton,
-  NTooltip
+  NTooltip,
 } from "naive-ui";
 import { EyeOffOutline, TrashBin, EyeOutline } from "@vicons/ionicons5";
 
@@ -381,7 +265,7 @@ const disposeFragements = () => {
 };
 
 const onPreserveStructureChange = (e) => {
-  preserveStructure.value = e.target.checked;
+  preserveStructure.value = e;
   if (attributesTableRef.value) {
     attributesTableRef.value.preserveStructureOnFilter =
       preserveStructure.value;
