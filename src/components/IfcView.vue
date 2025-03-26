@@ -108,7 +108,13 @@
       <div :class="{ hidden: !showEntityPanelRef }">
         <div class="absolute top-0 right-0 bg-white rounded-md flex gap-3 p-2">
           <div class="flex flex-col gap-3">
-            <p class="text-center font-semibold">Entity Attributes</p>
+            <div class="flex items-center justify-center gap-3">
+              
+              <p class="text-center font-semibold">Entity Attributes</p>
+              <n-icon size="15">
+                <ChevronForward />
+              </n-icon>
+            </div>
             <div
               style="display: flex; gap: 0.5rem; justify-content: space-between"
             >
@@ -183,7 +189,7 @@
                 </n-tooltip>
               </div>
             </div>
-            <div ref="attributesTableContainer"></div>
+              <div ref="attributesTableContainer"></div>
           </div>
         </div>
       </div>
@@ -218,7 +224,10 @@ import {
   EyeOutline,
   SearchOutline as SearchIcon,
   CopyOutline as CopyIcon,
-  DownloadOutline as DownloadIcon
+  DownloadOutline as DownloadIcon,
+  ChevronForward,
+  ChevronDownOutline
+
 } from "@vicons/ionicons5";
 
 // Utility functions
@@ -248,6 +257,8 @@ const triggerFileUpload = () => {
   console.log("here at triiger file upload");
   document.getElementById("ifc-file-input").click();
 };
+
+
 
 // Refs for DOM elements
 const container = ref(null);
@@ -563,6 +574,7 @@ onMounted(async () => {
     // );
   });
   // Add to the DOM
+  attributesTableContainer.value.innerHTML = null
   attributesTableContainer.value.appendChild(attributesTable);
 
   // Store reference to the table
