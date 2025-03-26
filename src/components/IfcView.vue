@@ -101,12 +101,13 @@
             </n-collapse>
           </n-collapse-item>
         </n-collapse>
+        <!-- </div> -->
       </div>
+
       <!-- Entity Attributes Panel -->
-      <!-- <div :class="{ hidden: !showEntityPanelRef }"> -->
-      <div>
+      <div :class="{ hidden: !showEntityPanelRef }">
         <div class="absolute top-0 right-0 bg-white rounded-md flex gap-3 p-2">
-          <div>
+          <div class="flex flex-col gap-3">
             <p class="text-center font-semibold">Entity Attributes</p>
             <div
               style="display: flex; gap: 0.5rem; justify-content: space-between"
@@ -125,7 +126,7 @@
                 <n-checkbox
                   @update:checked="onPreserveStructureChange"
                   v-model:checked="preserveStructure"
-                  ><p class="">Preserve structure</p></n-checkbox
+                  ><p class="truncate">Preserve structure</p></n-checkbox
                 >
               </div>
               <div class="flex gap-2 items-center">
@@ -177,6 +178,8 @@
                       </n-icon>
                     </n-button>
                   </template>
+                  <h1 class="font-semibold">Export JSON</h1>
+                  <p>Download the table contents as a JSON file.</p>
                 </n-tooltip>
               </div>
             </div>
@@ -195,6 +198,8 @@ import * as OBC from "@thatopen/components";
 import * as OBCF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui";
 import * as BUIC from "@thatopen/ui-obc";
+import { useDraggable } from "@vueuse/core";
+import { useTemplateRef } from "vue";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import {
   NCard,
@@ -216,14 +221,6 @@ import {
   DownloadOutline as DownloadIcon
 } from "@vicons/ionicons5";
 
-// type collapseItemProp = NonNullable<collapseItemProps['themeOverrides']>
-const headerClass = "custom-header";
-const contentClass = "custom-content";
-// const collapseItemProp: SelectThemeOverrides  = {
-// peers: {
-//   InternalSelection
-// }
-// }
 // Utility functions
 const downloadFile = (blob, fileName) => {
   const link = document.createElement("a");
