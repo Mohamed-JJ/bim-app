@@ -106,10 +106,11 @@
 
       <!-- Entity Attributes Panel -->
       <div :class="{ hidden: !showEntityPanelRef }">
-        <div class="absolute top-0 right-0 bg-white rounded-md flex gap-3 p-2">
+        <div
+          class="absolute top-0 right-0 bg-white rounded-md flex gap-3 p-2 overflow-auto"
+        >
           <div class="flex flex-col gap-3">
             <div class="flex items-center justify-center gap-3">
-              
               <p class="text-center font-semibold">Entity Attributes</p>
               <n-icon size="15">
                 <ChevronForward />
@@ -189,7 +190,7 @@
                 </n-tooltip>
               </div>
             </div>
-              <div ref="attributesTableContainer"></div>
+            <div ref="attributesTableContainer"></div>
           </div>
         </div>
       </div>
@@ -227,7 +228,6 @@ import {
   DownloadOutline as DownloadIcon,
   ChevronForward,
   ChevronDownOutline
-
 } from "@vicons/ionicons5";
 
 // Utility functions
@@ -257,8 +257,6 @@ const triggerFileUpload = () => {
   console.log("here at triiger file upload");
   document.getElementById("ifc-file-input").click();
 };
-
-
 
 // Refs for DOM elements
 const container = ref(null);
@@ -574,7 +572,7 @@ onMounted(async () => {
     // );
   });
   // Add to the DOM
-  attributesTableContainer.value.innerHTML = null
+  attributesTableContainer.value.innerHTML = null;
   attributesTableContainer.value.appendChild(attributesTable);
 
   // Store reference to the table
