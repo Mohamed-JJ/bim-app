@@ -562,14 +562,6 @@ onMounted(async () => {
 
   fragmentsManager.onFragmentsLoaded.add((model) => {
     loadedModelsList.value.push(model);
-    // console.log("in memoryy models list", loadedModelsList.value);
-    // loadedModelsList.value.forEach((value) =>
-    //   console.log(
-    //     "the iteration from the loaded list",
-    //     value.uuid,
-    //     value.visible
-    //   )
-    // );
   });
   // Add to the DOM
   attributesTableContainer.value.innerHTML = null;
@@ -584,11 +576,108 @@ onMounted(async () => {
   highlighter.setup({ world });
   highlighter.zoomToSelection = true; // to zoom the the selected part of the model
 
+  async function logStuff(fragmentID) {
+    var model = last_modelRef.value;
+    console.log("[LOGSTUFF] model ", model);
+    const _indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
+    await _indexer.process(model);
+
+    const psets = _indexer.getEntityRelations(model, fragmentID, "IsDefinedBy");
+    const somets = _indexer.getEntityRelations(
+      model,
+      fragmentID,
+      "IsTypedBy"
+    );
+
+    console.log("[INDEXER] psets : ", psets);
+    if (psets) {
+      for (const expressID of psets) {
+        console.log(
+          "=================================\n================================="
+        );
+        // You can get the pset attributes like this
+        const pset = await model.getProperties(expressID);
+        // You can get the pset props like this or iterate over pset.HasProperties yourself
+        await OBC.IfcPropertiesUtils.getPsetProps(
+          model,
+          expressID,
+          async (propExpressID) => {
+            const prop = await model.getProperties(propExpressID);
+            if (prop != null) {
+              console.log(
+                "[INDEXER] Name = ",
+                prop.Name?.value,
+                ", Nominal value = ",
+                prop.NominalValue?.value,
+                ", expressID",
+                expressID
+              );
+            } else {
+              console.log("[INDEXER] prop null", propExpressID);
+            }
+          }
+        );
+      }
+    }
+
+    console.log(
+      "=========================== big divider between ==========================="
+    );
+    console.log("[INDEXER] somets : ", somets);
+
+    if (somets) {
+      const properties = [];
+      console.log("the model:", model)
+      for (const expressID of somets) {
+        console.log(
+          "=================================\n================================="
+        );
+        // You can get the pset attributes like this
+        const pset = await model.getProperties(expressID);
+        console.log("the pset in types:", pset.expressID);
+        if (!pset) continue;
+        const stuff = await _indexer.getEntityChildren(
+          model,
+          expressID
+        );
+        console.log("stuuf from the entity children",stuff)
+        for (const s of stuff) {
+          const p = await model.getProperties(s);
+          console.log("the return data from get property", p)
+        }
+        // You can get the pset props like this or iterate over pset.HasProperties yourself
+        // await OBC.IfcPropertiesUtils.groupEntitiesByType(
+        //   model,
+        //   pset.expressID,
+        //   async (propExpressID) => {
+        //     const prop = await model.getProperties(propExpressID);
+        //     if (prop != null) {
+        //       console.log("[INDEXER] Name = ", prop.Name?.value);
+        //       console.log(
+        //         "[INDEXER] Nominal value = ",
+        //         prop.NominalValue?.value
+        //       );
+        //     } else {
+        //       console.log("[INDEXER] prop null", propExpressID);
+        //     }
+        //   }
+        // );
+      }
+    }
+  }
+
   highlighter.events.select.onHighlight.add((fragmentIdMap) => {
-    const objectKeys = Object.keys(fragmentIdMap);
-    console.log("the highlighter consoles this :", objectKeys, fragmentIdMap);
+    // const objectKeys = Object.keys(fragmentIdMap);
+    // console.log("the highlighter consoles this :", objectKeys, fragmentIdMap);
+    console.log("[ONHIGHLIGHT] data ", fragmentIdMap);
+    for (var meshId in fragmentIdMap) {
+      console.log("[HIGHLIGHTER] Event triggered");
+      console.log("[HIGHLIGHTER] MeshId : ", meshId);
+      console.log("[HIGHLIGHTER] FragmentId : ", [...fragmentIdMap[meshId]][0]);
+
+      logStuff([...fragmentIdMap[meshId]][0]);
+    }
     updateAttributesTable({ fragmentIdMap });
-    console.log(attributesTable);
   });
 
   highlighter.events.select.onClear.add(() =>
