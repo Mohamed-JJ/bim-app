@@ -587,15 +587,13 @@ onMounted(async () => {
     const contructs = _indexer.getEntityRelations(
       model,
       fragmentID,
-      "ContainedInStructure" // it is in the IFC models and i will integrate it in the code after i made something to integrate it in the code and the ui 
+      "ContainedInStructure" // it is in the IFC models and i will integrate it in the code after i made something to integrate it in the code and the ui
     );
 
-    console.log("[INDEXER] psets : ", psets);
+    // console.log("[INDEXER] psets : ", psets);
     if (psets) {
+      const psetSet = [];
       for (const expressID of psets) {
-        // console.log(
-        //   "=================================\n================================="
-        // );
         // You can get the pset attributes like this
         const pset = await model.getProperties(expressID);
         // You can get the pset props like this or iterate over pset.HasProperties yourself
@@ -604,6 +602,7 @@ onMounted(async () => {
           expressID,
           async (propExpressID) => {
             const prop = await model.getProperties(propExpressID);
+            psetSet.push(prop);
             if (prop != null) {
               // console.log(
               //   "[INDEXER] Name = ",
@@ -619,59 +618,72 @@ onMounted(async () => {
           }
         );
       }
+      // console.table("the property sets are", psetSet.map(item => item.Name.value))
     }
-
-    // console.log(
-    //   "=========================== big divider between ==========================="
-    // );
-    // console.log("[INDEXER] types : ", types);
 
     if (types) {
+      const pset = [];
       for (const expressID of types) {
-        // console.log(
-        //   "=================================\n================================="
-        // );
-        // You can get the pset attributes like this
-        const pset = await model.getProperties(expressID);
-        // console.log("the pset in types:", pset.expressID);
-        if (!pset) continue;
-        const stuff = await _indexer.getEntityChildren(model, expressID);
-        // console.log(
-        //   "stuuf from the entity children",
-        //   stuff,
-        //   "expressID",
-        //   expressID
-        // );
-        for (const s of stuff) {
-          const p = await model.getProperties(s);
-          // console.log("the return data from get property", p);
+        const pse = await model.getProperties(expressID);
+        // console.log(pse);
+        for (const IdEx of pse.HasPropertySets) {
+          const pet = await model.getProperties(IdEx.value);
+          await OBC.IfcPropertiesUtils.getPsetProps(
+            model,
+            pet.expressID,
+            async (propExpressID) => {
+              const prop = await model.getProperties(propExpressID);
+              if (prop != null) {
+                console.log("the prop is: ", prop)
+              } else {
+                console.log("[INDEXER] prop null", propExpressID);
+              }
+            }
+          );
         }
       }
+      // to store the values only once and have them repeated
+      // const typeSet = new Set();
+      // for (const expressID of types) {
+      //   // You can get the pset attributes like this
+      //   const pset = await model.getProperties(expressID);
+      //   if (!pset) continue;
+      //   const stuff = await _indexer.getEntityChildren(model, expressID);
+      //   for (const s of stuff) {
+      //     const p = await model.getProperties(s);
+      //     const stuffChild = await _indexer.getEntityChildren(model, s);
+      //     // console.log("the ret from get entity children", stuffChild)
+      //     // [...stuffChild].map()
+      //     for (const somet of stuffChild) {
+      //       const ch = await _indexer.getEntityChildren(model, somet);
+      //       const h = await model.getProperties(ch);
+      //       console.log(h)
+      //       const ret = await OBC.IfcPropertiesUtils.getPsetProps(
+      //         model,
+      //         somet
+      //       );
+      //       console.log(ret)
+      //       // const w = await model.(somet);
+      //       // console.log("inner loop for printing", w);
+      //     }
+      //     typeSet.add(p);
+      //   }
+      // }
+      // console.log("the types are", typeSet);
     }
-    console.log(
-      "=========================== big divider between ==========================="
-    );
     if (contructs) {
+      const consSet = new Set();
       for (const expressID of contructs) {
-        console.log(
-          "=================================\n================================="
-        );
         // You can get the pset attributes like this
         const pset = await model.getProperties(expressID);
-        // console.log("the pset in types:", pset.expressID);
         if (!pset) continue;
         const stuff = await _indexer.getEntityChildren(model, expressID);
-        console.log(
-          "stuuf from the entity children",
-          stuff,
-          "expressID",
-          expressID
-        );
         for (const s of stuff) {
           const p = await model.getProperties(s);
-          console.log("the return data from get property", p);
+          consSet.add(p);
         }
       }
+      // console.log("the consSet is", consSet)
     }
   }
 
@@ -680,9 +692,9 @@ onMounted(async () => {
     // console.log("the highlighter consoles this :", objectKeys, fragmentIdMap);
     console.log("[ONHIGHLIGHT] data ", fragmentIdMap);
     for (var meshId in fragmentIdMap) {
-      console.log("[HIGHLIGHTER] Event triggered");
-      console.log("[HIGHLIGHTER] MeshId : ", meshId);
-      console.log("[HIGHLIGHTER] FragmentId : ", [...fragmentIdMap[meshId]][0]);
+      // console.log("[HIGHLIGHTER] Event triggered");
+      // console.log("[HIGHLIGHTER] MeshId : ", meshId);
+      // console.log("[HIGHLIGHTER] FragmentId : ", [...fragmentIdMap[meshId]][0]);
 
       logStuff([...fragmentIdMap[meshId]][0]);
     }
