@@ -6,12 +6,7 @@
         <n-collapse arrow-placement="right" class="p-3">
           <n-collapse-item title="control panel">
             <n-collapse arrow-placement="right" class="p-3">
-              <n-collapse-item
-                title="load IFC Models"
-                name="1"
-                :headerClass="headerClass"
-                :contentClass="contentClass"
-              >
+              <n-collapse-item title="load IFC Models" name="1">
                 <div>
                   <NButton
                     text-color="white"
@@ -54,7 +49,7 @@
                     {{ model.uuid }}
                     <button
                       class="flex items-center justify-center rounded-md hover:cursor-pointer hover:scale-125 duration-200"
-                      @click="() => handleVisibilityClick(model)"
+                      @click="() => handleVisibilityClick(model as FragmentsGroup)"
                     >
                       <n-icon v-if="model.visible" size="20">
                         <EyeOffOutline />
@@ -65,7 +60,7 @@
                     </button>
                     <button
                       class="flex items-center justify-center rounded-md hover:cursor-pointer hover:scale-125 duration-200"
-                      @click="() => disposeFragementGroup(model, key)"
+                      @click="() => disposeFragementGroup(model as FragmentsGroup, key)"
                     >
                       <n-icon size="20">
                         <div class="">
@@ -90,7 +85,7 @@
               <n-collapse-item title="dispose fragments" name="5">
                 <div>
                   <NButton
-                    @click="disposeFragments"
+                    @click="disposeFragements"
                     text-color="white"
                     color="#2e3338"
                   >
@@ -198,7 +193,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from "vue";
 import * as WEBIFC from "web-ifc";
 import * as OBC from "@thatopen/components";
@@ -229,9 +224,11 @@ import {
   ChevronForward,
   ChevronDownOutline
 } from "@vicons/ionicons5";
+import type { EntityAttributesUIState } from "@thatopen/ui-obc/dist/components/tables/EntityAttributes/src/template";
+import type { FragmentsGroup } from "@thatopen/fragments";
 
 // Utility functions
-const downloadFile = (blob, fileName) => {
+const downloadFile = (blob: Blob, fileName: string) => {
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = fileName;
@@ -239,31 +236,37 @@ const downloadFile = (blob, fileName) => {
   URL.revokeObjectURL(link.href);
 };
 
-const readFile = (file) => {
+const readFile = (file: File): Promise<ArrayBuffer> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result);
+    reader.onload = (e) => {
+      if (e.target && e.target.result instanceof ArrayBuffer) {
+        resolve(e.target.result);
+      } else {
+        reject(new Error("Failed to read file as ArrayBuffer."));
+      }
+    };
     reader.onerror = (e) => reject(e);
     reader.readAsArrayBuffer(file);
   });
 };
 
-const handleVisibilityClick = (model) => {
+const handleVisibilityClick = (model: FragmentsGroup) => {
   console.log("Clicked on the visibility button");
   model.visible = !model.visible; // Update the visibility state
 };
 
 const triggerFileUpload = () => {
   console.log("here at triiger file upload");
-  document.getElementById("ifc-file-input").click();
+  document.getElementById("ifc-file-input")!.click();
 };
 
 // Refs for DOM elements
 const container = ref(null);
-const modelsList = ref(null);
-const loadedModelsList = ref([]);
-const modelsListElementsRef = ref([]);
-const attributesTableContainer = ref(null);
+// const modelsList = ref(null);
+const loadedModelsList = ref<FragmentsGroup[]>([]);
+const modelsListElementsRef = ref<(BUI.Table<BUI.TableRowData<Record<string, BUI.TableCellValue>>>) | []>([]);
+const attributesTableContainer = ref<HTMLElement | null>(null);
 
 // Entity panel state
 const preserveStructure = ref(true);
@@ -272,16 +275,23 @@ const preserveStructure = ref(true);
 const showEntityPanelRef = ref(false);
 
 // ThatOpen BIM variables and dependencies
-const componentsRef = ref(null);
-const worldRef = ref(null);
-const highlighterRef = ref(null);
-const last_modelRef = ref(null);
-const attributesTableRef = ref(null);
-const updateAttributesTableRef = ref(null);
-const fragementsManagerRef = ref(null);
+const componentsRef = ref<OBC.Components | null>(null);
+const worldRef = ref<OBC.SimpleWorld<
+  OBC.BaseScene,
+  OBC.BaseCamera,
+  OBC.BaseRenderer
+> | null>(null);
+const highlighterRef = ref<OBCF.Highlighter | null>(null);
+const last_modelRef = ref<FragmentsGroup | null>(null);
+const attributesTableRef = ref<BUI.Table<
+  BUI.TableRowData<Record<string, BUI.TableCellValue>>
+> | null>(null);
+const updateAttributesTableRef =
+  ref<BUI.UpdateFunction<EntityAttributesUIState> | null>(null);
+const fragementsManagerRef = ref<OBC.FragmentsManager | null>(null);
 
-// Entity attributes panel methods
-const onSearchInput = (e) => {
+// Entity attributes panel methods  # will get back to it to give it type
+const onSearchInput = (e: any) => {
   if (attributesTableRef.value) {
     attributesTableRef.value.queryString = e;
   }
@@ -296,11 +306,12 @@ const onSearchInput = (e) => {
 // };
 
 const disposeFragements = () => {
-  fragementsManagerRef.value.dispose();
+  fragementsManagerRef?.value?.dispose();
   showEntityPanelRef.value = false;
+  // loadedModelsList.value = []
 };
 
-const onPreserveStructureChange = (e) => {
+const onPreserveStructureChange = (e : any) => {
   preserveStructure.value = e;
   if (attributesTableRef.value) {
     attributesTableRef.value.preserveStructureOnFilter =
@@ -323,16 +334,16 @@ const onCopyTSV = async () => {
   }
 };
 
-const onAttributesChange = (e) => {
+const onAttributesChange = (e: any) : any => {
   if (updateAttributesTableRef.value) {
     updateAttributesTableRef.value({
       attributesToInclude: () => {
         const attributes = [
           ...e.target.value,
-          (name) => name.includes("Value"),
-          (name) => name.startsWith("Material"),
-          (name) => name.startsWith("Relating"),
-          (name) => {
+          (name : string) => name.includes("Value"),
+          (name : string) => name.startsWith("Material"),
+          (name : string) => name.startsWith("Relating"),
+          (name : string) => {
             const ignore = ["IsGroupedBy", "IsDecomposedBy"];
             return name.startsWith("Is") && !ignore.includes(name);
           }
@@ -344,15 +355,16 @@ const onAttributesChange = (e) => {
 };
 
 // Handle file upload
-async function handleFileUpload(event) {
-  const file = event?.target?.files[0];
+async function handleFileUpload(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const file: File | undefined = target.files?.[0];
   if (!file) {
     alert("No file selected!");
     return;
   }
 
   try {
-    const data = await readFile(file);
+    const data: ArrayBuffer = await readFile(file);
     const buffer = new Uint8Array(data);
     await loadIFCModel(buffer, file.name);
   } catch (error) {
@@ -377,10 +389,11 @@ async function loadSampleModel() {
 }
 
 // Common function to load IFC models
-async function loadIFCModel(buffer, name) {
-  const ifcLoader = componentsRef.value.get(OBC.IfcLoader);
+async function loadIFCModel(buffer: Uint8Array, name: string) {
+  const ifcLoader = componentsRef?.value!.get(OBC.IfcLoader);
+  // @ts-ignore
   const model = await ifcLoader.load(buffer, { name });
-  worldRef.value.scene.three.add(model);
+  worldRef?.value!.scene.three.add(model);
 
   // Process entity relations
   await setupEntityAttributes(model);
@@ -389,13 +402,13 @@ async function loadIFCModel(buffer, name) {
 }
 
 // Setup entity attributes
-async function setupEntityAttributes(model) {
-  const indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
+async function setupEntityAttributes(model: FragmentsGroup) {
+  const indexer = componentsRef?.value!.get(OBC.IfcRelationsIndexer);
   await indexer.process(model);
 }
 
-function disposeFragementGroup(group, key) {
-  fragementsManagerRef.value.disposeGroup(group);
+function disposeFragementGroup(group: FragmentsGroup, key: number) {
+  fragementsManagerRef?.value!.disposeGroup(group);
   // console.log("deleting at index ", key)
   loadedModelsList.value = loadedModelsList.value.filter(
     (_, index) => index !== key
@@ -412,7 +425,7 @@ const exportGLTF = () => {
   const exporter = new GLTFExporter();
 
   exporter.parse(
-    worldRef.value.scene.three,
+    worldRef?.value!.scene.three,
     (gltf) => {
       if (gltf instanceof ArrayBuffer) {
         const glbBlob = new Blob([gltf], { type: "model/gltf-binary" });
@@ -446,12 +459,12 @@ onMounted(async () => {
   sceneComponent.setup();
   world.scene = sceneComponent;
 
-  const rendererComponent = new OBC.SimpleRenderer(components, container.value);
+  const rendererComponent = new OBC.SimpleRenderer(components, container?.value!);
   world.renderer = rendererComponent;
 
   const cameraComponent = new OBC.SimpleCamera(components);
   world.camera = cameraComponent;
-  world.camera.controls.setLookAt(10, 5.5, 5, -4, -1, -6.5);
+  world.camera.controls?.setLookAt(10, 5.5, 5, -4, -1, -6.5);
 
   // Handle window resize
   window.addEventListener("resize", () => {
@@ -502,7 +515,7 @@ onMounted(async () => {
   // Configure entity attributes panel
   const baseStyle = { padding: "0.25rem", borderRadius: "0.25rem" };
   const tableDefinition = {
-    Entity: (entity) => {
+    Entity: (entity: any) => {
       let style = {};
       if (entity === OBC.IfcCategoryMap[WEBIFC.IFCPROPERTYSET]) {
         style = { ...baseStyle, backgroundColor: "purple", color: "white" };
@@ -512,14 +525,14 @@ onMounted(async () => {
       }
       return BUI.html`<bim-label style=${BUI.styleMap(style)}>${entity}</bim-label>`;
     },
-    PredefinedType: (type) => {
+    PredefinedType: (type : any) => {
       const colors = ["#1c8d83", "#3c1c8d", "#386c19", "#837c24"];
       const randomIndex = Math.floor(Math.random() * colors.length);
       const backgroundColor = colors[randomIndex];
       const style = { ...baseStyle, backgroundColor, color: "white" };
       return BUI.html`<bim-label style=${BUI.styleMap(style)}>${type}</bim-label>`;
     },
-    NominalValue: (value) => {
+    NominalValue: (value : any) => {
       let style = {};
       if (typeof value === "boolean" && value === false) {
         style = { ...baseStyle, backgroundColor: "#b13535", color: "white" };
@@ -542,10 +555,10 @@ onMounted(async () => {
           "ContainedInStructure",
           "HasProperties",
           "HasPropertySets",
-          (name) => name.includes("Value"),
-          (name) => name.startsWith("Material"),
-          (name) => name.startsWith("Relating"),
-          (name) => {
+          (name: string) => name.includes("Value"),
+          (name: string) => name.startsWith("Material"),
+          (name: string) => name.startsWith("Relating"),
+          (name: string) => {
             const ignore = ["IsGroupedBy", "IsDecomposedBy"];
             return name.startsWith("Is") && !ignore.includes(name);
           }
@@ -564,8 +577,10 @@ onMounted(async () => {
     loadedModelsList.value.push(model);
   });
   // Add to the DOM
-  attributesTableContainer.value.innerHTML = null;
-  attributesTableContainer.value.appendChild(attributesTable);
+  if (attributesTableContainer.value) {
+    attributesTableContainer.value.innerHTML = '';
+  }
+  attributesTableContainer?.value!.appendChild(attributesTable)!;
 
   // Store reference to the table
   attributesTableRef.value = attributesTable;
@@ -576,16 +591,19 @@ onMounted(async () => {
   highlighter.setup({ world });
   highlighter.zoomToSelection = true; // to zoom the the selected part of the model
 
-  async function logStuff(fragmentID) {
+  async function logStuff(fragmentID: number) {
+    console.log(typeof fragmentID)
     var model = last_modelRef.value;
     // console.log("[LOGSTUFF] model ", model);
-    const _indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
-    await _indexer.process(model);
 
-    const psets = _indexer.getEntityRelations(model, fragmentID, "IsDefinedBy");
-    const types = _indexer.getEntityRelations(model, fragmentID, "IsTypedBy");
+    if (!model) return;
+    const _indexer = componentsRef?.value!.get(OBC.IfcRelationsIndexer);
+    await _indexer.process(model as FragmentsGroup);
+
+    const psets = _indexer.getEntityRelations(model as FragmentsGroup, fragmentID, "IsDefinedBy");
+    const types = _indexer.getEntityRelations(model as FragmentsGroup, fragmentID, "IsTypedBy");
     const contructs = _indexer.getEntityRelations(
-      model,
+      model as FragmentsGroup,
       fragmentID,
       "ContainedInStructure" // it is in the IFC models and i will integrate it in the code after i made something to integrate it in the code and the ui
     );
@@ -598,20 +616,12 @@ onMounted(async () => {
         const pset = await model.getProperties(expressID);
         // You can get the pset props like this or iterate over pset.HasProperties yourself
         await OBC.IfcPropertiesUtils.getPsetProps(
-          model,
+          model as FragmentsGroup,
           expressID,
           async (propExpressID) => {
-            const prop = await model.getProperties(propExpressID);
+            const prop = await (model as FragmentsGroup).getProperties(propExpressID);
             psetSet.push(prop);
             if (prop != null) {
-              // console.log(
-              //   "[INDEXER] Name = ",
-              //   prop.Name?.value,
-              //   ", Nominal value = ",
-              //   prop.NominalValue?.value,
-              //   ", expressID",
-              //   expressID
-              // );
             } else {
               // console.log("[INDEXER] prop null", propExpressID);
             }
@@ -624,23 +634,25 @@ onMounted(async () => {
     if (types) {
       const pset = [];
       for (const expressID of types) {
-        const pse = await model.getProperties(expressID);
+        const pse = await model?.getProperties(expressID);
         // console.log(pse);
+        if (pse) {
         for (const IdEx of pse.HasPropertySets) {
           const pet = await model.getProperties(IdEx.value);
           await OBC.IfcPropertiesUtils.getPsetProps(
-            model,
-            pet.expressID,
+            model as FragmentsGroup,
+            pet!.expressID,
             async (propExpressID) => {
-              const prop = await model.getProperties(propExpressID);
+              const prop = await model?.getProperties(propExpressID);
               if (prop != null) {
-                console.log("the prop is: ", prop)
+                console.log("the prop is: ", prop);
               } else {
                 console.log("[INDEXER] prop null", propExpressID);
               }
             }
           );
         }
+      }
       }
       // to store the values only once and have them repeated
       // const typeSet = new Set();
@@ -675,12 +687,15 @@ onMounted(async () => {
       const consSet = new Set();
       for (const expressID of contructs) {
         // You can get the pset attributes like this
-        const pset = await model.getProperties(expressID);
-        if (!pset) continue;
-        const stuff = await _indexer.getEntityChildren(model, expressID);
-        for (const s of stuff) {
-          const p = await model.getProperties(s);
-          consSet.add(p);
+        if (model) {
+          const pset = await model.getProperties(expressID);
+          if (!pset) continue;
+          // need to get back to this
+          const stuff = await _indexer.getEntityChildren(model as FragmentsGroup, expressID);
+          for (const s of stuff) {
+            const p = await model.getProperties(s);
+            consSet.add(p);
+          }
         }
       }
       // console.log("the consSet is", consSet)

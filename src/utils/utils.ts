@@ -35,6 +35,8 @@ export function triggerFileUpload() {
   // console.log("here at trigger")
 }
 
+
+
 // retrival and login
 // async function logStuff(componentsRef: ref<OBC.Components | null>, last_modelRef, fragmentID) {
 //   var model = last_modelRef.value;
