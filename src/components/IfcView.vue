@@ -199,6 +199,7 @@
 </template>
 
 <script setup>
+import { v4 as uuidv4 } from "uuid";
 import { ref, onMounted } from "vue";
 import * as WEBIFC from "web-ifc";
 import * as OBC from "@thatopen/components";
@@ -375,6 +376,19 @@ async function loadSampleModel() {
     alert("Failed to load sample IFC file.");
   }
 }
+// Load sample model
+async function loadModelFromLink(url) {
+  try {
+    const file = await fetch(url);
+    const ifcUuid = uuidv4();
+    const buffer = await file.arrayBuffer();
+    const typedArray = new Uint8Array(buffer);
+    await loadIFCModel(typedArray, `${ifcUuid}.ifc`);
+  } catch (error) {
+    console.error("Error loading sample IFC file:", error);
+    alert("Failed to load sample IFC file.");
+  }
+}
 
 // Common function to load IFC models
 async function loadIFCModel(buffer, name) {
@@ -396,7 +410,6 @@ async function setupEntityAttributes(model) {
 
 function disposeFragementGroup(group, key) {
   fragementsManagerRef.value.disposeGroup(group);
-  // console.log("deleting at index ", key)
   loadedModelsList.value = loadedModelsList.value.filter(
     (_, index) => index !== key
   );
@@ -578,106 +591,42 @@ onMounted(async () => {
 
   async function logStuff(fragmentID) {
     var model = last_modelRef.value;
-    // console.log("[LOGSTUFF] model ", model);
+    // console.log("[LOGSTUFF] model ", model._properties);
     const _indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
     await _indexer.process(model);
 
     const psets = _indexer.getEntityRelations(model, fragmentID, "IsDefinedBy");
     const types = _indexer.getEntityRelations(model, fragmentID, "IsTypedBy");
-    const contructs = _indexer.getEntityRelations(
-      model,
-      fragmentID,
-      "ContainedInStructure" // it is in the IFC models and i will integrate it in the code after i made something to integrate it in the code and the ui 
-    );
-
-    console.log("[INDEXER] psets : ", psets);
-    if (psets) {
-      for (const expressID of psets) {
-        // console.log(
-        //   "=================================\n================================="
-        // );
-        // You can get the pset attributes like this
-        const pset = await model.getProperties(expressID);
-        // You can get the pset props like this or iterate over pset.HasProperties yourself
-        await OBC.IfcPropertiesUtils.getPsetProps(
-          model,
-          expressID,
-          async (propExpressID) => {
-            const prop = await model.getProperties(propExpressID);
-            if (prop != null) {
-              // console.log(
-              //   "[INDEXER] Name = ",
-              //   prop.Name?.value,
-              //   ", Nominal value = ",
-              //   prop.NominalValue?.value,
-              //   ", expressID",
-              //   expressID
-              // );
-            } else {
-              // console.log("[INDEXER] prop null", propExpressID);
-            }
-          }
-        );
-      }
-    }
-
-    // console.log(
-    //   "=========================== big divider between ==========================="
+    // const contructs = _indexer.getEntityRelations(
+    //   model,
+    //   fragmentID,
+    //   "ContainedInStructure" // it is in the IFC models and i will integrate it in the code after i made something to integrate it in the code and the ui
     // );
-    // console.log("[INDEXER] types : ", types);
+    const args = ["IsDecomposedBy", "Decomposes", "AssociatedTo", "HasAssociations", "ClassificationForObjects", "IsGroupedBy", "HasAssignments", "IsDefinedBy", "DefinesOcurrence", "IsTypedBy", "Types", "Defines", "ContainedInStructure", "ContainsElements", "HasControlElements", "AssignedToFlowElement", "ConnectedTo", "ConnectedFrom", "ReferencedBy", "Declares", "HasContext", "Controls", "IsNestedBy", "Nests", "DocumentRefForObjects"]
 
-    if (types) {
-      for (const expressID of types) {
-        // console.log(
-        //   "=================================\n================================="
-        // );
-        // You can get the pset attributes like this
-        const pset = await model.getProperties(expressID);
-        // console.log("the pset in types:", pset.expressID);
-        if (!pset) continue;
-        const stuff = await _indexer.getEntityChildren(model, expressID);
-        // console.log(
-        //   "stuuf from the entity children",
-        //   stuff,
-        //   "expressID",
-        //   expressID
-        // );
-        for (const s of stuff) {
-          const p = await model.getProperties(s);
-          // console.log("the return data from get property", p);
-        }
+    const hasThings = []
+    args.forEach(arg => {
+      
+      const test = _indexer.getEntityRelations(model, fragmentID, arg);
+      if (test.length) {
+        hasThings.push(arg)
       }
-    }
-    console.log(
-      "=========================== big divider between ==========================="
-    );
-    if (contructs) {
-      for (const expressID of contructs) {
-        console.log(
-          "=================================\n================================="
-        );
-        // You can get the pset attributes like this
-        const pset = await model.getProperties(expressID);
-        // console.log("the pset in types:", pset.expressID);
-        if (!pset) continue;
-        const stuff = await _indexer.getEntityChildren(model, expressID);
-        console.log(
-          "stuuf from the entity children",
-          stuff,
-          "expressID",
-          expressID
-        );
-        for (const s of stuff) {
-          const p = await model.getProperties(s);
-          console.log("the return data from get property", p);
-        }
+    });
+    const filtered = new Set()
+    hasThings.forEach(async (arg) => {
+      
+      const test = _indexer.getEntityRelations(model, fragmentID, arg);
+      console.log(test)
+      for (const i of test) {
+        const tes = await model.getProperties(i);
+        console.log(arg, i, tes)
+        filtered.add({arg, i, tes})
       }
-    }
+    });
+    console.log("non empty args are", hasThings, filtered)
   }
 
   highlighter.events.select.onHighlight.add((fragmentIdMap) => {
-    // const objectKeys = Object.keys(fragmentIdMap);
-    // console.log("the highlighter consoles this :", objectKeys, fragmentIdMap);
     console.log("[ONHIGHLIGHT] data ", fragmentIdMap);
     for (var meshId in fragmentIdMap) {
       console.log("[HIGHLIGHTER] Event triggered");
