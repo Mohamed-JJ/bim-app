@@ -190,7 +190,12 @@
                 </n-tooltip>
               </div>
             </div>
-            <div ref="attributesTableContainer"></div>
+            <!-- <div ref="attributesTableContainer"></div> -->
+            <div class="text-black flex justify-center items-center flex-col ">
+              <div v-for="(value, key) in IfcPropertSetListRef">
+                {{ key }}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -265,6 +270,7 @@ const modelsList = ref(null);
 const loadedModelsList = ref([]);
 const modelsListElementsRef = ref([]);
 const attributesTableContainer = ref(null);
+const IfcPropertSetListRef = ref([]);
 
 // Entity panel state
 const preserveStructure = ref(true);
@@ -576,9 +582,10 @@ onMounted(async () => {
   fragmentsManager.onFragmentsLoaded.add((model) => {
     loadedModelsList.value.push(model);
   });
-  // Add to the DOM
-  attributesTableContainer.value.innerHTML = null;
-  attributesTableContainer.value.appendChild(attributesTable);
+
+  // Add to the DOM, add back for comparizon for entity attributes
+  // attributesTableContainer.value.innerHTML = null;
+  // attributesTableContainer.value.appendChild(attributesTable);
 
   // Store reference to the table
   attributesTableRef.value = attributesTable;
@@ -591,47 +598,71 @@ onMounted(async () => {
 
   async function logStuff(fragmentID) {
     var model = last_modelRef.value;
-    // console.log("[LOGSTUFF] model ", model._properties);
+
+    // model._properties is where all the meshes are (the ones related to the fragment or model)
+    // console.log("[LOGSTUFF] model ", model);
     const _indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
     await _indexer.process(model);
 
-    const psets = _indexer.getEntityRelations(model, fragmentID, "IsDefinedBy");
-    const types = _indexer.getEntityRelations(model, fragmentID, "IsTypedBy");
-    // const contructs = _indexer.getEntityRelations(
-    //   model,
-    //   fragmentID,
-    //   "ContainedInStructure" // it is in the IFC models and i will integrate it in the code after i made something to integrate it in the code and the ui
-    // );
-    const args = ["IsDecomposedBy", "Decomposes", "AssociatedTo", "HasAssociations", "ClassificationForObjects", "IsGroupedBy", "HasAssignments", "IsDefinedBy", "DefinesOcurrence", "IsTypedBy", "Types", "Defines", "ContainedInStructure", "ContainsElements", "HasControlElements", "AssignedToFlowElement", "ConnectedTo", "ConnectedFrom", "ReferencedBy", "Declares", "HasContext", "Controls", "IsNestedBy", "Nests", "DocumentRefForObjects"]
+    const args = [
+      "IsDecomposedBy",
+      "Decomposes",
+      "AssociatedTo",
+      "HasAssociations",
+      "ClassificationForObjects",
+      "IsGroupedBy",
+      "HasAssignments",
+      "IsDefinedBy",
+      "DefinesOcurrence",
+      "IsTypedBy",
+      "Types",
+      "Defines",
+      "ContainedInStructure",
+      "ContainsElements",
+      "HasControlElements",
+      "AssignedToFlowElement",
+      "ConnectedTo",
+      "ConnectedFrom",
+      "ReferencedBy",
+      "Declares",
+      "HasContext",
+      "Controls",
+      "IsNestedBy",
+      "Nests",
+      "DocumentRefForObjects"
+    ];
 
-    const hasThings = []
-    args.forEach(arg => {
-      
+    const hasThings = [];
+    args.forEach((arg) => {
       const test = _indexer.getEntityRelations(model, fragmentID, arg);
       if (test.length) {
-        hasThings.push(arg)
+        hasThings.push(arg);
       }
     });
-    const filtered = new Set()
+    const filtered = new Set();
+    const IfPropertSet = [];
     hasThings.forEach(async (arg) => {
-      
-      const test = _indexer.getEntityRelations(model, fragmentID, arg);
-      console.log(test)
-      for (const i of test) {
+      const relations = _indexer.getEntityRelations(model, fragmentID, arg);
+      for (const i of relations) {
         const tes = await model.getProperties(i);
-        console.log(arg, i, tes)
-        filtered.add({arg, i, tes})
+        if (tes.constructor.name === "IfcPropertySet") {
+          IfPropertSet.push(tes);
+        }
+        if (tes.HasProperties) {
+          // console.log(i, "has children", tes)
+        }
+        filtered.add({ arg, i, tes });
       }
     });
-    console.log("non empty args are", hasThings, filtered)
+    IfcPropertSetListRef.value =  IfPropertSet
+    console.log("propety sets", IfPropertSet);
   }
 
   highlighter.events.select.onHighlight.add((fragmentIdMap) => {
-    console.log("[ONHIGHLIGHT] data ", fragmentIdMap);
     for (var meshId in fragmentIdMap) {
-      console.log("[HIGHLIGHTER] Event triggered");
-      console.log("[HIGHLIGHTER] MeshId : ", meshId);
-      console.log("[HIGHLIGHTER] FragmentId : ", [...fragmentIdMap[meshId]][0]);
+      // console.log("[HIGHLIGHTER] Event triggered");
+      // console.log("[HIGHLIGHTER] MeshId : ", meshId);
+      // console.log("[HIGHLIGHTER] FragmentId : ", [...fragmentIdMap[meshId]][0]);
 
       logStuff([...fragmentIdMap[meshId]][0]);
     }
