@@ -643,7 +643,6 @@ onMounted(async () => {
         hasThings.push(arg);
       }
     });
-    const filtered = new Set();
     const IfPropertSet = [];
     IfcPropertSetListRef.value = []
     hasThings.forEach(async (arg) => {
@@ -651,12 +650,17 @@ onMounted(async () => {
       for (const i of relations) {
         const tes = await model.getProperties(i);
         if (tes.constructor.name === "IfcPropertySet") {
-          IfcPropertSetListRef.value.push(tes);
+          const smallSets = []
+          for (const p of tes.HasProperties)
+          {
+            const st = await model.getProperties(p.value)
+            smallSets.push(st)
+          }
+          IfcPropertSetListRef.value.push({IfcName: tes.Name, IfcPSets: smallSets});
         }
         if (tes.HasProperties) {
           // console.log(i, "has children", tes)
         }
-        filtered.add({ arg, i, tes });
       }
     });
   
