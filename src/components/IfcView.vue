@@ -190,12 +190,16 @@
                 </n-tooltip>
               </div>
             </div>
-            <!-- <div ref="attributesTableContainer"></div> -->
-            <div class="text-black flex justify-center items-center flex-col ">
-              <div v-for="(value, key) in IfcPropertSetListRef">
-                {{ key }}
-              </div>
+            <div class="text-black flex justify-center items-center flex-col">
+              <template v-if="IfcPropertSetListRef.length">
+                <div
+                  v-for="(value, key) in IfcPropertSetListRef" :key="key"
+                >
+                  {{ key }}
+                </div>
+              </template>
             </div>
+            <div ref="attributesTableContainer"></div>
           </div>
         </div>
       </div>
@@ -584,8 +588,8 @@ onMounted(async () => {
   });
 
   // Add to the DOM, add back for comparizon for entity attributes
-  // attributesTableContainer.value.innerHTML = null;
-  // attributesTableContainer.value.appendChild(attributesTable);
+  attributesTableContainer.value.innerHTML = null;
+  attributesTableContainer.value.appendChild(attributesTable);
 
   // Store reference to the table
   attributesTableRef.value = attributesTable;
@@ -641,12 +645,13 @@ onMounted(async () => {
     });
     const filtered = new Set();
     const IfPropertSet = [];
+    IfcPropertSetListRef.value = []
     hasThings.forEach(async (arg) => {
       const relations = _indexer.getEntityRelations(model, fragmentID, arg);
       for (const i of relations) {
         const tes = await model.getProperties(i);
         if (tes.constructor.name === "IfcPropertySet") {
-          IfPropertSet.push(tes);
+          IfcPropertSetListRef.value.push(tes);
         }
         if (tes.HasProperties) {
           // console.log(i, "has children", tes)
@@ -654,8 +659,9 @@ onMounted(async () => {
         filtered.add({ arg, i, tes });
       }
     });
-    IfcPropertSetListRef.value =  IfPropertSet
-    console.log("propety sets", IfPropertSet);
+  
+    // IfcPropertSetListRef.value = IfPropertSet;
+    console.log("propety sets", IfcPropertSetListRef.value);
   }
 
   highlighter.events.select.onHighlight.add((fragmentIdMap) => {
@@ -672,6 +678,7 @@ onMounted(async () => {
   highlighter.events.select.onClear.add(() =>
     updateAttributesTable({ fragmentIdMap: {} })
   );
+
 
   // Store references
   componentsRef.value = components;
