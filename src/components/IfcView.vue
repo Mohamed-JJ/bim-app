@@ -190,20 +190,6 @@
                 </n-tooltip>
               </div>
             </div>
-            <div class="text-black flex justify-center items-center flex-col">
-              <n-collapse v-if="meshWrapper" arrow-placement="left" class="p-3">
-                <n-collapse-item  :title="`Entity: ${meshWrapper?.constructor.name}    Name: ${meshWrapper?.Name.value}`" :name="1">
-                  {{meshWrapper?.Name.value}}
-                </n-collapse-item>
-              </n-collapse>
-              <template v-if="IfcPropertSetListRef.length">
-                <!-- <div
-                  v-for="(value, key) in IfcPropertSetListRef" :key="key"
-                >
-                  {{ key }}
-                </div> -->
-              </template>
-            </div>
             <div ref="attributesTableContainer"></div>
           </div>
         </div>
@@ -279,8 +265,6 @@ const modelsList = ref(null);
 const loadedModelsList = ref([]);
 const modelsListElementsRef = ref([]);
 const attributesTableContainer = ref(null);
-const IfcPropertSetListRef = ref([]);
-const meshWrapper = ref(null);
 
 // Entity panel state
 const preserveStructure = ref(true);
@@ -613,78 +597,7 @@ onMounted(async () => {
     // model._properties is where all the meshes are (the ones related to the fragment or model)
     const _indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
     await _indexer.process(model);
-    meshWrapper.value = await model.getProperties(fragmentID); // this will be the wrapper in the model in the ui
-    console.log("l9lawi", meshWrapper.value);
-    // console.log("children", children)
   }
-
-  // async function logStuff(fragmentID) {
-  //   var model = last_modelRef.value;
-
-  //   // model._properties is where all the meshes are (the ones related to the fragment or model)
-  //   const _indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
-  //   await _indexer.process(model);
-
-  //   const args = [
-  //     "IsDecomposedBy",
-  //     "Decomposes",
-  //     "AssociatedTo",
-  //     "HasAssociations",
-  //     "ClassificationForObjects",
-  //     "IsGroupedBy",
-  //     "HasAssignments",
-  //     "IsDefinedBy",
-  //     "DefinesOcurrence",
-  //     "IsTypedBy",
-  //     "Types",
-  //     "Defines",
-  //     "ContainedInStructure",
-  //     "ContainsElements",
-  //     "HasControlElements",
-  //     "AssignedToFlowElement",
-  //     "ConnectedTo",
-  //     "ConnectedFrom",
-  //     "ReferencedBy",
-  //     "Declares",
-  //     "HasContext",
-  //     "Controls",
-  //     "IsNestedBy",
-  //     "Nests",
-  //     "DocumentRefForObjects"
-  //   ];
-
-  //   const hasThings = [];
-  //   args.forEach((arg) => {
-  //     const test = _indexer.getEntityRelations(model, fragmentID, arg);
-  //     if (test.length) {
-  //       hasThings.push(arg);
-  //     }
-  //   });
-  //   const IfPropertSet = [];
-  //   IfcPropertSetListRef.value = []
-  //   hasThings.forEach(async (arg) => {
-  //     const relations = _indexer.getEntityRelations(model, fragmentID, arg);
-  //     for (const i of relations) {
-  //       const tes = await model.getProperties(i);
-  //       console.log("res is", tes)
-  //       if (tes.constructor.name === "IfcPropertySet") {
-  //         const smallSets = []
-  //         for (const p of tes.HasProperties)
-  //         {
-  //           const st = await model.getProperties(p.value)
-  //           smallSets.push(st)
-  //         }
-  //         IfcPropertSetListRef.value.push({IfcName: tes.Name, IfcPSets: smallSets});
-  //       }
-  //       if (tes.HasProperties) {
-  //         // console.log(i, "has children", tes)
-  //       }
-  //     }
-  //   });
-
-  //   // IfcPropertSetListRef.value = IfPropertSet;
-  //   console.log("propety sets", IfcPropertSetListRef.value);
-  // }
 
   highlighter.events.select.onHighlight.add((fragmentIdMap) => {
     for (var meshId in fragmentIdMap) {
@@ -698,6 +611,7 @@ onMounted(async () => {
   });
 
   highlighter.events.select.onClear.add(() =>
+
     updateAttributesTable({ fragmentIdMap: {} })
   );
 
