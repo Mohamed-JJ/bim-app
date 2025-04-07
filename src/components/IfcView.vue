@@ -1,19 +1,15 @@
 <template>
   <div class="w-screen h-screen">
     <div id="container" ref="container" class="relative w-full h-full">
-      <!-- BIM Panel for IFC Models -->
+      <!-- Control Panel -->
       <div class="absolute top-0 left-0 text-black bg-white rounded-md">
         <n-collapse arrow-placement="right" class="p-3">
-          <n-collapse-item title="control panel">
+          <n-collapse-item title="Control Panel">
             <n-collapse arrow-placement="right" class="p-3">
-              <n-collapse-item
-                title="load IFC Models"
-                name="1"
-                :headerClass="headerClass"
-                :contentClass="contentClass"
-              >
+              <!-- IFC Model Loading Section -->
+              <n-collapse-item title="Load IFC Models" name="1">
                 <div>
-                  <NButton
+                  <n-button
                     text-color="white"
                     color="#2e3338"
                     @click="triggerFileUpload"
@@ -26,35 +22,39 @@
                       style="display: none"
                       @change="handleFileUpload"
                     />
-                  </NButton>
+                  </n-button>
                 </div>
               </n-collapse-item>
-              <n-collapse-item title="load Sample Model" name="2">
+
+              <!-- Sample Model Section -->
+              <n-collapse-item title="Load Sample Model" name="2">
                 <div>
-                  <NButton
+                  <n-button
                     text-color="white"
                     color="#2e3338"
                     @click="loadSampleModel"
                   >
                     Load Sample Model
-                  </NButton>
+                  </n-button>
                 </div>
               </n-collapse-item>
-              <n-collapse-item title="models list" name="3">
+
+              <!-- Models List Section -->
+              <n-collapse-item title="Models List" name="3">
                 <div class="text-black w-full border-2 border-white">
-                  <div v-if="loadedModelsList.length === 0">
-                    <p>no loaded models yet</p>
+                  <div v-if="loadedModels.length === 0">
+                    <p>No loaded models yet</p>
                   </div>
                   <div
                     v-else
-                    v-for="(model, key) in loadedModelsList"
+                    v-for="(model, key) in loadedModels"
                     :key="key"
                     class="text-black flex gap-3 items-center py-2 px-3 rounded-md hover:bg-gray-200 duration-200"
                   >
                     {{ model.uuid }}
                     <button
                       class="flex items-center justify-center rounded-md hover:cursor-pointer hover:scale-125 duration-200"
-                      @click="() => handleVisibilityClick(model)"
+                      @click="() => toggleModelVisibility(model)"
                     >
                       <n-icon v-if="model.visible" size="20">
                         <EyeOffOutline />
@@ -65,47 +65,46 @@
                     </button>
                     <button
                       class="flex items-center justify-center rounded-md hover:cursor-pointer hover:scale-125 duration-200"
-                      @click="() => disposeFragementGroup(model, key)"
+                      @click="() => removeModel(model, key)"
                     >
                       <n-icon size="20">
-                        <div class="">
-                          <TrashBin />
-                        </div>
+                        <TrashBin />
                       </n-icon>
                     </button>
                   </div>
                 </div>
               </n-collapse-item>
-              <n-collapse-item title="export gltf" name="4">
+
+              <!-- Export and Dispose Sections -->
+              <n-collapse-item title="Export GLTF" name="4">
                 <div>
-                  <NButton
+                  <n-button
                     @click="exportGLTF"
                     text-color="white"
                     color="#2e3338"
                   >
                     Export GLTF
-                  </NButton>
+                  </n-button>
                 </div>
               </n-collapse-item>
-              <n-collapse-item title="dispose fragments" name="5">
+              <n-collapse-item title="Dispose Fragments" name="5">
                 <div>
-                  <NButton
-                    @click="disposeFragments"
+                  <n-button
+                    @click="disposeAllFragments"
                     text-color="white"
                     color="#2e3338"
                   >
                     Dispose Fragments
-                  </NButton>
+                  </n-button>
                 </div>
               </n-collapse-item>
             </n-collapse>
           </n-collapse-item>
         </n-collapse>
-        <!-- </div> -->
       </div>
 
       <!-- Entity Attributes Panel -->
-      <div :class="{ hidden: !showEntityPanelRef }">
+      <div :class="{ hidden: !showEntityPanel }">
         <div
           class="absolute top-0 right-0 bg-white rounded-md flex gap-3 p-2 overflow-auto"
         >
@@ -124,20 +123,21 @@
                   <SearchIcon />
                 </n-icon>
                 <n-input
-                  @update:value="onSearchInput"
+                  @update:value="handleSearch"
                   type="text"
                   placeholder="Search"
                   size="small"
                 >
                 </n-input>
                 <n-checkbox
-                  @update:checked="onPreserveStructureChange"
+                  @update:checked="handlePreserveStructureChange"
                   v-model:checked="preserveStructure"
-                  ><p class="truncate">Preserve structure</p></n-checkbox
                 >
+                  <p class="truncate">Preserve structure</p>
+                </n-checkbox>
               </div>
               <div class="flex gap-2 items-center">
-                <bim-dropdown @change="onAttributesChange" multiple>
+                <bim-dropdown @change="handleAttributesChange" multiple>
                   <bim-option label="Name" checked></bim-option>
                   <bim-option label="ContainedInStructure" checked></bim-option>
                   <bim-option label="ForLayerSet"></bim-option>
@@ -155,12 +155,7 @@
                 </bim-dropdown>
                 <n-tooltip trigger="hover">
                   <template #trigger>
-                    <n-button
-                      @click="onCopyTSV"
-                      icon="solar:copy-bold"
-                      tooltip-title="Copy TSV"
-                      tooltip-text="Copy the table contents as tab separated text values, so you can copy them into a spreadsheet."
-                    >
+                    <n-button @click="copyTableAsTSV">
                       <n-icon size="20">
                         <CopyIcon />
                       </n-icon>
@@ -174,12 +169,7 @@
                 </n-tooltip>
                 <n-tooltip trigger="hover">
                   <template #trigger>
-                    <n-button
-                      @click="onExportJSON"
-                      icon="ph:export-fill"
-                      tooltip-title="Export JSON"
-                      tooltip-text="Download the table contents as a JSON file."
-                    >
+                    <n-button @click="exportTableAsJSON">
                       <n-icon size="20">
                         <DownloadIcon />
                       </n-icon>
@@ -189,15 +179,6 @@
                   <p>Download the table contents as a JSON file.</p>
                 </n-tooltip>
               </div>
-            </div>
-            <div class="text-black flex justify-center items-center flex-col">
-              <template v-if="IfcPropertSetListRef.length">
-                <div
-                  v-for="(value, key) in IfcPropertSetListRef" :key="key"
-                >
-                  {{ key }}
-                </div>
-              </template>
             </div>
             <div ref="attributesTableContainer"></div>
           </div>
@@ -215,17 +196,13 @@ import * as OBC from "@thatopen/components";
 import * as OBCF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui";
 import * as BUIC from "@thatopen/ui-obc";
-import { useDraggable } from "@vueuse/core";
-import { useTemplateRef } from "vue";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import {
-  NCard,
   NCollapse,
   NCollapseItem,
   NInput,
   NIcon,
   NCheckbox,
-  NSelect,
   NButton,
   NTooltip
 } from "naive-ui";
@@ -236,11 +213,39 @@ import {
   SearchOutline as SearchIcon,
   CopyOutline as CopyIcon,
   DownloadOutline as DownloadIcon,
-  ChevronForward,
-  ChevronDownOutline
+  ChevronForward
 } from "@vicons/ionicons5";
 
-// Utility functions
+// ===============================================================
+// STATE MANAGEMENT
+// ===============================================================
+
+// DOM references
+const container = ref(null);
+const attributesTableContainer = ref(null);
+
+// UI state
+const preserveStructure = ref(true);
+const showEntityPanel = ref(false);
+const loadedModels = ref([]);
+const propertySets = ref([]);
+
+// logic state
+const isProcessed = ref(false)
+
+// BIM components
+const components = ref(null);
+const world = ref(null);
+const highlighter = ref(null);
+const lastModel = ref(null);
+const attributesTable = ref(null);
+const updateAttributesTable = ref(null);
+const fragmentsManager = ref(null);
+
+// ===============================================================
+// UTILITY FUNCTIONS
+// ===============================================================
+
 const downloadFile = (blob, fileName) => {
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -258,85 +263,48 @@ const readFile = (file) => {
   });
 };
 
-const handleVisibilityClick = (model) => {
-  console.log("Clicked on the visibility button");
-  model.visible = !model.visible; // Update the visibility state
-};
+// ===============================================================
+// EVENT HANDLERS
+// ===============================================================
 
 const triggerFileUpload = () => {
-  console.log("here at triiger file upload");
   document.getElementById("ifc-file-input").click();
 };
 
-// Refs for DOM elements
-const container = ref(null);
-const modelsList = ref(null);
-const loadedModelsList = ref([]);
-const modelsListElementsRef = ref([]);
-const attributesTableContainer = ref(null);
-const IfcPropertSetListRef = ref([]);
+const toggleModelVisibility = (model) => {
+  model.visible = !model.visible;
+};
 
-// Entity panel state
-const preserveStructure = ref(true);
-
-// show the entity panel state
-const showEntityPanelRef = ref(false);
-
-// ThatOpen BIM variables and dependencies
-const componentsRef = ref(null);
-const worldRef = ref(null);
-const highlighterRef = ref(null);
-const last_modelRef = ref(null);
-const attributesTableRef = ref(null);
-const updateAttributesTableRef = ref(null);
-const fragementsManagerRef = ref(null);
-
-// Entity attributes panel methods
-const onSearchInput = (e) => {
-  if (attributesTableRef.value) {
-    attributesTableRef.value.queryString = e;
+const handleSearch = (value) => {
+  if (attributesTable.value) {
+    attributesTable.value.queryString = value;
   }
 };
 
-// the old serach handler function
-// const onSearchInput = (e) => {
-//   if (attributesTableRef.value) {
-//     console.log(e)
-//     attributesTableRef.value.queryString = e;
-//   }
-// };
-
-const disposeFragements = () => {
-  fragementsManagerRef.value.dispose();
-  showEntityPanelRef.value = false;
-};
-
-const onPreserveStructureChange = (e) => {
-  preserveStructure.value = e;
-  if (attributesTableRef.value) {
-    attributesTableRef.value.preserveStructureOnFilter =
-      preserveStructure.value;
+const handlePreserveStructureChange = (checked) => {
+  if (attributesTable.value) {
+    attributesTable.value.preserveStructureOnFilter = checked;
   }
 };
 
-const onExportJSON = () => {
-  if (attributesTableRef.value) {
-    attributesTableRef.value.downloadData("entities-attributes");
-  }
-};
-
-const onCopyTSV = async () => {
-  if (attributesTableRef.value) {
-    await navigator.clipboard.writeText(attributesTableRef.value.tsv);
+const copyTableAsTSV = async () => {
+  if (attributesTable.value) {
+    await navigator.clipboard.writeText(attributesTable.value.tsv);
     alert(
       "Table data copied as TSV in clipboard! Try to paste it in a spreadsheet app."
     );
   }
 };
 
-const onAttributesChange = (e) => {
-  if (updateAttributesTableRef.value) {
-    updateAttributesTableRef.value({
+const exportTableAsJSON = () => {
+  if (attributesTable.value) {
+    attributesTable.value.downloadData("entities-attributes");
+  }
+};
+
+const handleAttributesChange = (e) => {
+  if (updateAttributesTable.value) {
+    updateAttributesTable.value({
       attributesToInclude: () => {
         const attributes = [
           ...e.target.value,
@@ -354,7 +322,10 @@ const onAttributesChange = (e) => {
   }
 };
 
-// Handle file upload
+// ===============================================================
+// IFC MODEL HANDLING
+// ===============================================================
+
 async function handleFileUpload(event) {
   const file = event?.target?.files[0];
   if (!file) {
@@ -372,7 +343,6 @@ async function handleFileUpload(event) {
   }
 }
 
-// Load sample model
 async function loadSampleModel() {
   try {
     const file = await fetch(
@@ -386,8 +356,8 @@ async function loadSampleModel() {
     alert("Failed to load sample IFC file.");
   }
 }
-// Load sample model
-async function loadModelFromLink(url) {
+
+async function loadModelFromURL(url) {
   try {
     const file = await fetch(url);
     const ifcUuid = uuidv4();
@@ -395,39 +365,44 @@ async function loadModelFromLink(url) {
     const typedArray = new Uint8Array(buffer);
     await loadIFCModel(typedArray, `${ifcUuid}.ifc`);
   } catch (error) {
-    console.error("Error loading sample IFC file:", error);
-    alert("Failed to load sample IFC file.");
+    console.error("Error loading IFC file from URL:", error);
+    alert("Failed to load IFC file from URL.");
   }
 }
 
-// Common function to load IFC models
 async function loadIFCModel(buffer, name) {
-  const ifcLoader = componentsRef.value.get(OBC.IfcLoader);
+  const ifcLoader = components.value.get(OBC.IfcLoader);
   const model = await ifcLoader.load(buffer, { name });
-  worldRef.value.scene.three.add(model);
+  world.value.scene.three.add(model);
 
   // Process entity relations
   await setupEntityAttributes(model);
 
-  last_modelRef.value = model;
+  lastModel.value = model;
 }
 
-// Setup entity attributes
 async function setupEntityAttributes(model) {
-  const indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
+  const indexer = components.value.get(OBC.IfcRelationsIndexer);
   await indexer.process(model);
 }
 
-function disposeFragementGroup(group, key) {
-  fragementsManagerRef.value.disposeGroup(group);
-  loadedModelsList.value = loadedModelsList.value.filter(
-    (_, index) => index !== key
-  );
+function removeModel(model, index) {
+  fragmentsManager.value.disposeGroup(model);
+  loadedModels.value = loadedModels.value.filter((_, i) => i !== index);
 }
 
-// Export to GLTF
+function disposeAllFragments() {
+  fragmentsManager.value.dispose();
+  showEntityPanel.value = false;
+  loadedModels.value = [];
+}
+
+// ===============================================================
+// EXPORT FUNCTIONALITY
+// ===============================================================
+
 const exportGLTF = () => {
-  if (!last_modelRef.value) {
+  if (!lastModel.value) {
     alert("No model loaded to export!");
     return;
   }
@@ -435,7 +410,7 @@ const exportGLTF = () => {
   const exporter = new GLTFExporter();
 
   exporter.parse(
-    worldRef.value.scene.three,
+    world.value.scene.three,
     (gltf) => {
       if (gltf instanceof ArrayBuffer) {
         const glbBlob = new Blob([gltf], { type: "model/gltf-binary" });
@@ -453,28 +428,105 @@ const exportGLTF = () => {
   );
 };
 
-// Initialize the 3D scene and UI
+// ===============================================================
+// ENTITY ANALYSIS
+// ===============================================================
+
+async function analyzeEntity(fragmentID) {
+  const model = lastModel.value;
+  const indexer = components.value.get(OBC.IfcRelationsIndexer);
+ 
+  const relationTypes = [
+    "IsDecomposedBy",
+    "Decomposes",
+    "AssociatedTo",
+    "HasAssociations",
+    "ClassificationForObjects",
+    "IsGroupedBy",
+    "HasAssignments",
+    "IsDefinedBy",
+    "DefinesOcurrence",
+    "IsTypedBy",
+    "Types",
+    "Defines",
+    "ContainedInStructure",
+    "ContainsElements",
+    "HasControlElements",
+    "AssignedToFlowElement",
+    "ConnectedTo",
+    "ConnectedFrom",
+    "ReferencedBy",
+    "Declares",
+    "HasContext",
+    "Controls",
+    "IsNestedBy",
+    "Nests",
+    "DocumentRefForObjects"
+  ];
+
+  const hasRelations = [];
+  relationTypes.forEach((relationType) => {
+    const relations = indexer.getEntityRelations(
+      model,
+      fragmentID,
+      relationType
+    );
+    if (relations.length) {
+      hasRelations.push(relationType);
+    }
+  });
+
+  const entityProperties = new Set();
+  const ifcPropertySets = [];
+
+  for (const relationType of hasRelations) {
+    const relations = indexer.getEntityRelations(
+      model,
+      fragmentID,
+      relationType
+    );
+    for (const relationId of relations) {
+      const properties = await model.getProperties(relationId);
+      if (properties.constructor.name === "IfcPropertySet") {
+        ifcPropertySets.push(properties);
+      }
+      entityProperties.add({ relationType, relationId, properties });
+    }
+  }
+
+  propertySets.value = ifcPropertySets;
+  console.log("Property sets:", propertySets.value);
+}
+
+// ===============================================================
+// INITIALIZATION
+// ===============================================================
+
 onMounted(async () => {
-  // Initialize the UI library
+  // Initialize BIM UI library
   BUI.Manager.init();
 
-  // Set up the components
-  const components = new OBC.Components();
+  // Set up components
+  const componentsInstance = new OBC.Components();
 
-  // Set up the scene
-  const worlds = components.get(OBC.Worlds);
-  const world = worlds.create();
+  // Set up 3D scene
+  const worlds = componentsInstance.get(OBC.Worlds);
+  const worldInstance = worlds.create();
 
-  const sceneComponent = new OBC.SimpleScene(components);
+  // Configure scene components
+  const sceneComponent = new OBC.SimpleScene(componentsInstance);
   sceneComponent.setup();
-  world.scene = sceneComponent;
+  worldInstance.scene = sceneComponent;
 
-  const rendererComponent = new OBC.SimpleRenderer(components, container.value);
-  world.renderer = rendererComponent;
+  const rendererComponent = new OBC.SimpleRenderer(
+    componentsInstance,
+    container.value
+  );
+  worldInstance.renderer = rendererComponent;
 
-  const cameraComponent = new OBC.SimpleCamera(components);
-  world.camera = cameraComponent;
-  world.camera.controls.setLookAt(10, 5.5, 5, -4, -1, -6.5);
+  const cameraComponent = new OBC.SimpleCamera(componentsInstance);
+  worldInstance.camera = cameraComponent;
+  worldInstance.camera.controls.setLookAt(10, 5.5, 5, -4, -1, -6.5);
 
   // Handle window resize
   window.addEventListener("resize", () => {
@@ -482,47 +534,28 @@ onMounted(async () => {
     cameraComponent.updateAspect();
   });
 
-  // Add a grid to the scene
-  const viewerGrids = components.get(OBC.Grids);
-  viewerGrids.create(world);
-
-  // world.scene.three.background = null; // can chang the color of the background with this lne right here
+  // Add grid to scene
+  const viewerGrids = componentsInstance.get(OBC.Grids);
+  viewerGrids.create(worldInstance);
 
   // Initialize components
-  components.init();
+  componentsInstance.init();
 
-  // Set up the IFC loader
-  const ifcLoader = components.get(OBC.IfcLoader);
+  // Set up IFC loader
+  const ifcLoader = componentsInstance.get(OBC.IfcLoader);
   await ifcLoader.setup();
 
-  // Set up the fragments manager
-  const fragmentsManager = components.get(OBC.FragmentsManager);
-  fragmentsManager.onFragmentsLoaded.add((model) => {
-    showEntityPanelRef.value = true;
-    if (world.scene) {
-      world.scene.three.add(model);
+  // Set up fragments manager
+  const fragmentsManagerInstance = componentsInstance.get(OBC.FragmentsManager);
+  fragmentsManagerInstance.onFragmentsLoaded.add((model) => {
+    showEntityPanel.value = true;
+    if (worldInstance.scene) {
+      worldInstance.scene.three.add(model);
     }
-    const [modelsListElements] = BUIC.tables.modelsList({
-      components,
-      tags: { schema: true, viewDefinition: false },
-      actions: { download: false }
-    });
-    // console.log("loaded a new element", modelsListElements)
+    loadedModels.value.push(model);
   });
 
-  // Create the models list component
-  const [modelsListElement] = BUIC.tables.modelsList({
-    components,
-    tags: { schema: true, viewDefinition: false },
-    actions: { download: false }
-  });
-
-  // Append the models list to the DOM
-  // console.log(modelsList)
-  modelsListElementsRef.value = modelsListElement;
-  // modelsList.value.appendChild(modelsListElement); // removed because the functionality i added was good enough, might revert back to it in the future
-
-  // Configure entity attributes panel
+  // Configure entity attributes table
   const baseStyle = { padding: "0.25rem", borderRadius: "0.25rem" };
   const tableDefinition = {
     Entity: (entity) => {
@@ -554,13 +587,13 @@ onMounted(async () => {
     }
   };
 
-  const [attributesTable, updateAttributesTable] = BUIC.tables.entityAttributes(
-    {
-      components,
+  const [attributesTableInstance, updateAttributesTableFn] =
+    BUIC.tables.entityAttributes({
+      components: componentsInstance,
       fragmentIdMap: {},
       tableDefinition,
       attributesToInclude: () => {
-        const attributes = [
+        return [
           "Name",
           "ContainedInStructure",
           "HasProperties",
@@ -573,118 +606,46 @@ onMounted(async () => {
             return name.startsWith("Is") && !ignore.includes(name);
           }
         ];
-        return attributes;
       }
-    }
-  );
+    });
 
   // Configure table
-  attributesTable.expanded = true;
-  attributesTable.indentationInText = true;
-  attributesTable.preserveStructureOnFilter = preserveStructure.value;
+  attributesTableInstance.expanded = true;
+  attributesTableInstance.indentationInText = true;
+  attributesTableInstance.preserveStructureOnFilter = preserveStructure.value;
 
-  fragmentsManager.onFragmentsLoaded.add((model) => {
-    loadedModelsList.value.push(model);
-  });
+  // Add to DOM
+  attributesTableContainer.value.innerHTML = "";
+  attributesTableContainer.value.appendChild(attributesTableInstance);
 
-  // Add to the DOM, add back for comparizon for entity attributes
-  attributesTableContainer.value.innerHTML = null;
-  attributesTableContainer.value.appendChild(attributesTable);
-
-  // Store reference to the table
-  attributesTableRef.value = attributesTable;
-  updateAttributesTableRef.value = updateAttributesTable;
+  // Store table references
+  attributesTable.value = attributesTableInstance;
+  updateAttributesTable.value = updateAttributesTableFn;
 
   // Setup highlighter
-  const highlighter = components.get(OBCF.Highlighter);
-  highlighter.setup({ world });
-  highlighter.zoomToSelection = true; // to zoom the the selected part of the model
+  const highlighterInstance = componentsInstance.get(OBCF.Highlighter);
+  highlighterInstance.setup({ world: worldInstance });
+  highlighterInstance.zoomToSelection = true;
 
-  async function logStuff(fragmentID) {
-    var model = last_modelRef.value;
-
-    // model._properties is where all the meshes are (the ones related to the fragment or model)
-    // console.log("[LOGSTUFF] model ", model);
-    const _indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
-    await _indexer.process(model);
-
-    const args = [
-      "IsDecomposedBy",
-      "Decomposes",
-      "AssociatedTo",
-      "HasAssociations",
-      "ClassificationForObjects",
-      "IsGroupedBy",
-      "HasAssignments",
-      "IsDefinedBy",
-      "DefinesOcurrence",
-      "IsTypedBy",
-      "Types",
-      "Defines",
-      "ContainedInStructure",
-      "ContainsElements",
-      "HasControlElements",
-      "AssignedToFlowElement",
-      "ConnectedTo",
-      "ConnectedFrom",
-      "ReferencedBy",
-      "Declares",
-      "HasContext",
-      "Controls",
-      "IsNestedBy",
-      "Nests",
-      "DocumentRefForObjects"
-    ];
-
-    const hasThings = [];
-    args.forEach((arg) => {
-      const test = _indexer.getEntityRelations(model, fragmentID, arg);
-      if (test.length) {
-        hasThings.push(arg);
-      }
-    });
-    const filtered = new Set();
-    const IfPropertSet = [];
-    IfcPropertSetListRef.value = []
-    hasThings.forEach(async (arg) => {
-      const relations = _indexer.getEntityRelations(model, fragmentID, arg);
-      for (const i of relations) {
-        const tes = await model.getProperties(i);
-        if (tes.constructor.name === "IfcPropertySet") {
-          IfcPropertSetListRef.value.push(tes);
-        }
-        if (tes.HasProperties) {
-          // console.log(i, "has children", tes)
-        }
-        filtered.add({ arg, i, tes });
-      }
-    });
-  
-    // IfcPropertSetListRef.value = IfPropertSet;
-    console.log("propety sets", IfcPropertSetListRef.value);
-  }
-
-  highlighter.events.select.onHighlight.add((fragmentIdMap) => {
-    for (var meshId in fragmentIdMap) {
-      // console.log("[HIGHLIGHTER] Event triggered");
-      // console.log("[HIGHLIGHTER] MeshId : ", meshId);
-      // console.log("[HIGHLIGHTER] FragmentId : ", [...fragmentIdMap[meshId]][0]);
-
-      logStuff([...fragmentIdMap[meshId]][0]);
+  // Handle selection events
+  highlighterInstance.events.select.onHighlight.add((fragmentIdMap) => {
+    propertySets.value = [];
+    for (const meshId in fragmentIdMap) {
+      analyzeEntity([...fragmentIdMap[meshId]][0]);
     }
-    updateAttributesTable({ fragmentIdMap });
+    updateAttributesTableFn({ fragmentIdMap });
   });
 
-  highlighter.events.select.onClear.add(() =>
-    updateAttributesTable({ fragmentIdMap: {} })
-  );
-
+  highlighterInstance.events.select.onClear.add(() => {
+    propertySets.value = [];
+    updateAttributesTableFn({ fragmentIdMap: {} });
+  });
 
   // Store references
-  componentsRef.value = components;
-  fragementsManagerRef.value = fragmentsManager;
-  worldRef.value = world;
-  highlighterRef.value = highlighter;
+  components.value = componentsInstance;
+  fragmentsManager.value = fragmentsManagerInstance;
+  world.value = worldInstance;
+  highlighter.value = highlighterInstance;
 });
 </script>
 
