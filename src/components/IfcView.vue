@@ -614,6 +614,7 @@ onMounted(async () => {
     const _indexer = componentsRef.value.get(OBC.IfcRelationsIndexer);
     await _indexer.process(model);
     meshWrapper.value = await model.getProperties(fragmentID); // this will be the wrapper in the model in the ui
+    console.log("l9lawi", meshWrapper.value);
     // console.log("children", children)
   }
 
