@@ -215,7 +215,7 @@ import {
   DownloadOutline as DownloadIcon,
   ChevronForward
 } from "@vicons/ionicons5";
-import  {getElementValue} from "@thatopen/ui"
+import { getElementValue } from "@thatopen/ui";
 
 // ===============================================================
 // STATE MANAGEMENT
@@ -230,6 +230,7 @@ const preserveStructure = ref(true);
 const showEntityPanel = ref(false);
 const loadedModels = ref([]);
 const propertySets = ref([]);
+const uiTree = ref([]);
 
 // logic state
 const isProcessed = ref(false);
@@ -432,6 +433,25 @@ const exportGLTF = () => {
 };
 
 // ===============================================================
+// data preparation
+// ===============================================================
+
+async function prepareData(model, indexer, node) {
+  const psets = [];
+  if (node.constructor.name === "IfcPropertySet") {
+    console.log("property node", node);
+    for (const i in node.HasProperties) {
+      console.log("i=", i);
+    }
+  } else {
+    const subnode = await model.getProperties(node.expressID);
+    console.log("subnode", subnode);
+  }
+
+  return null;
+}
+
+// ===============================================================
 // ENTITY ANALYSIS
 // ===============================================================
 
@@ -439,8 +459,6 @@ async function analyzeEntity(fragmentID) {
   console.log("attributes", attributesRef.value);
   const model = lastModel.value;
   const indexer = components.value.get(OBC.IfcRelationsIndexer);
-  const html = getElementValue(attributesTableContainer.value)
-  console.log(html)
   const relations = [
     "IsDecomposedBy",
     "Decomposes",
@@ -476,14 +494,14 @@ async function analyzeEntity(fragmentID) {
       relationType
     );
     if (relations.length) {
-      console.log(relationType)
+      console.log(relationType);
       hasRelations.push(relationType);
     }
   });
 
   const entityProperties = new Set();
   const ifcPropertySets = [];
-  const meshes = []
+  const meshes = [];
 
   for (const relationType of hasRelations) {
     const relations = indexer.getEntityRelations(
@@ -493,16 +511,13 @@ async function analyzeEntity(fragmentID) {
     );
     for (const relationId of relations) {
       const properties = await model.getProperties(relationId);
-      if (properties.constructor.name === "IfcPropertySet") {
-        ifcPropertySets.push(properties);
-      } else {
-        console.log("the properties ", properties)
-      }
-      meshes.push(properties)
-      entityProperties.add({ relationType, relationId, properties });
+      meshes.push(properties);
+      // entityProperties.add({ relationType, relationId, properties });
     }
   }
-  console.log(meshes)
+  for (const meshe of meshes) {
+    const tre = prepareData(model, indexer, meshe);
+  }
   propertySets.value = ifcPropertySets;
   console.log("Property sets:", propertySets.value);
 }
