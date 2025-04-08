@@ -215,6 +215,7 @@ import {
   DownloadOutline as DownloadIcon,
   ChevronForward
 } from "@vicons/ionicons5";
+import  {getElementValue} from "@thatopen/ui"
 
 // ===============================================================
 // STATE MANAGEMENT
@@ -438,7 +439,8 @@ async function analyzeEntity(fragmentID) {
   console.log("attributes", attributesRef.value);
   const model = lastModel.value;
   const indexer = components.value.get(OBC.IfcRelationsIndexer);
-
+  const html = getElementValue(attributesTableContainer.value)
+  console.log(html)
   const relations = [
     "IsDecomposedBy",
     "Decomposes",
@@ -481,6 +483,7 @@ async function analyzeEntity(fragmentID) {
 
   const entityProperties = new Set();
   const ifcPropertySets = [];
+  const meshes = []
 
   for (const relationType of hasRelations) {
     const relations = indexer.getEntityRelations(
@@ -495,10 +498,11 @@ async function analyzeEntity(fragmentID) {
       } else {
         console.log("the properties ", properties)
       }
+      meshes.push(properties)
       entityProperties.add({ relationType, relationId, properties });
     }
   }
-
+  console.log(meshes)
   propertySets.value = ifcPropertySets;
   console.log("Property sets:", propertySets.value);
 }
