@@ -231,7 +231,7 @@ const loadedModels = ref([]);
 const propertySets = ref([]);
 
 // logic state
-const isProcessed = ref(false)
+const isProcessed = ref(false);
 
 // BIM components
 const components = ref(null);
@@ -241,6 +241,7 @@ const lastModel = ref(null);
 const attributesTable = ref(null);
 const updateAttributesTable = ref(null);
 const fragmentsManager = ref(null);
+const attributesRef = ref([]);
 
 // ===============================================================
 // UTILITY FUNCTIONS
@@ -316,6 +317,7 @@ const handleAttributesChange = (e) => {
             return name.startsWith("Is") && !ignore.includes(name);
           }
         ];
+        attributesRef.value = attributes;
         return attributes;
       }
     });
@@ -433,10 +435,11 @@ const exportGLTF = () => {
 // ===============================================================
 
 async function analyzeEntity(fragmentID) {
+  console.log("attributes", attributesRef.value);
   const model = lastModel.value;
   const indexer = components.value.get(OBC.IfcRelationsIndexer);
- 
-  const relationTypes = [
+
+  const relations = [
     "IsDecomposedBy",
     "Decomposes",
     "AssociatedTo",
@@ -463,15 +466,15 @@ async function analyzeEntity(fragmentID) {
     "Nests",
     "DocumentRefForObjects"
   ];
-
   const hasRelations = [];
-  relationTypes.forEach((relationType) => {
+  relations.forEach((relationType) => {
     const relations = indexer.getEntityRelations(
       model,
       fragmentID,
       relationType
     );
     if (relations.length) {
+      console.log(relationType)
       hasRelations.push(relationType);
     }
   });
@@ -489,6 +492,8 @@ async function analyzeEntity(fragmentID) {
       const properties = await model.getProperties(relationId);
       if (properties.constructor.name === "IfcPropertySet") {
         ifcPropertySets.push(properties);
+      } else {
+        console.log("the properties ", properties)
       }
       entityProperties.add({ relationType, relationId, properties });
     }
@@ -593,7 +598,7 @@ onMounted(async () => {
       fragmentIdMap: {},
       tableDefinition,
       attributesToInclude: () => {
-        return [
+        const att = [
           "Name",
           "ContainedInStructure",
           "HasProperties",
@@ -606,6 +611,8 @@ onMounted(async () => {
             return name.startsWith("Is") && !ignore.includes(name);
           }
         ];
+        attributesRef.value = att;
+        return att;
       }
     });
 
