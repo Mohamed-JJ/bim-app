@@ -437,18 +437,26 @@ const exportGLTF = () => {
 // ===============================================================
 
 async function prepareData(model, indexer, node) {
-  const psets = [];
-  if (node.constructor.name === "IfcPropertySet") {
-    console.log("property node", node);
-    for (const i in node.HasProperties) {
-      console.log("i=", i);
+  try {
+    const psets = [];
+    if (node.constructor.name === "IfcPropertySet") {
+      const obj = {
+        name: `${node.constructor.name} ${node.Name?.value || "Unnamed"}`,
+        singleValues: []
+      };
+      for (const i of node.HasProperties) {
+        const set = await model.getProperties(i.value);
+        obj.singleValues.push(set);
+      }
+      psets.push(obj);
     }
-  } else {
-    const subnode = await model.getProperties(node.expressID);
-    console.log("subnode", subnode);
-  }
-
-  return null;
+    //  else {
+    //   const subnode = await model.getProperties(node.expressID);
+    //   console.log("subnode", subnode);
+    // }
+    if (psets.length) return psets;
+    return null
+  } catch (error) {}
 }
 
 // ===============================================================
@@ -494,11 +502,9 @@ async function analyzeEntity(fragmentID) {
       relationType
     );
     if (relations.length) {
-      console.log(relationType);
       hasRelations.push(relationType);
     }
   });
-
   const entityProperties = new Set();
   const ifcPropertySets = [];
   const meshes = [];
@@ -516,7 +522,8 @@ async function analyzeEntity(fragmentID) {
     }
   }
   for (const meshe of meshes) {
-    const tre = prepareData(model, indexer, meshe);
+    const tre = await prepareData(model, indexer, meshe);
+    console.log("tree",tre)
   }
   propertySets.value = ifcPropertySets;
   console.log("Property sets:", propertySets.value);
