@@ -180,6 +180,13 @@
                 </n-tooltip>
               </div>
             </div>
+            <n-collapse arrow-placement="right" class="p-3">
+              <div v-for="(value, key) in propsListsRef" :key="key">
+                <n-collapse-item :title="value.name">
+                  <div v-for="(val, ky) in value.singleValues" :key="ky"></div>
+                </n-collapse-item>
+              </div>
+            </n-collapse>
             <div ref="attributesTableContainer"></div>
           </div>
         </div>
@@ -244,6 +251,7 @@ const attributesTable = ref(null);
 const updateAttributesTable = ref(null);
 const fragmentsManager = ref(null);
 const attributesRef = ref([]);
+const propsListsRef = ref([]);
 
 // ===============================================================
 // UTILITY FUNCTIONS
@@ -438,24 +446,22 @@ const exportGLTF = () => {
 
 async function prepareData(model, indexer, node) {
   try {
-    const psets = [];
     if (node.constructor.name === "IfcPropertySet") {
       const obj = {
-        name: `${node.constructor.name} ${node.Name?.value || "Unnamed"}`,
+        name: `Entity: ${node.constructor.name}.    Name: ${node.Name?.value || "Unnamed"}`,
         singleValues: []
       };
       for (const i of node.HasProperties) {
         const set = await model.getProperties(i.value);
         obj.singleValues.push(set);
       }
-      psets.push(obj);
+      return obj;
     }
     //  else {
     //   const subnode = await model.getProperties(node.expressID);
     //   console.log("subnode", subnode);
     // }
-    if (psets.length) return psets;
-    return null
+    return null;
   } catch (error) {}
 }
 
@@ -494,6 +500,7 @@ async function analyzeEntity(fragmentID) {
     "Nests",
     "DocumentRefForObjects"
   ];
+  const UiValues = [];
   const hasRelations = [];
   relations.forEach((relationType) => {
     const relations = indexer.getEntityRelations(
@@ -523,8 +530,11 @@ async function analyzeEntity(fragmentID) {
   }
   for (const meshe of meshes) {
     const tre = await prepareData(model, indexer, meshe);
-    console.log("tree",tre)
+    if (tre) UiValues.push(tre);
+    console.log("tree", tre);
   }
+  console.log(UiValues);
+  propsListsRef.value = UiValues;
   propertySets.value = ifcPropertySets;
   console.log("Property sets:", propertySets.value);
 }
