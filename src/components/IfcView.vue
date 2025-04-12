@@ -181,9 +181,22 @@
               </div>
             </div>
             <n-collapse arrow-placement="right" class="p-3">
+              <div>
+                <span>Entity</span>
+                <span>Name</span>
+                <span>PredefinedType</span>
+                <span>longName</span>
+                <span>NominalValue</span>
+                <span>LayerThickness</span>
+              </div>
               <div v-for="(value, key) in propsListsRef" :key="key">
                 <n-collapse-item :title="value.name">
-                  <div v-for="(val, ky) in value.singleValues" :key="ky"></div>
+                  <div v-for="(val, ky) in value.singleValues" :key="ky" class="flex gap-3 w-full h-full">
+                    <span>{{ val.Name.value }}</span>
+                    <span>{{ val.NominalValue.value }}</span>
+                    <span></span>
+                         
+                  </div>
                 </n-collapse-item>
               </div>
             </n-collapse>
