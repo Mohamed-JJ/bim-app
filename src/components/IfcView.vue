@@ -181,13 +181,31 @@
               </div>
             </div>
             <n-collapse arrow-placement="right" class="p-3">
-              <div>
+              <div class="flex justify-around gap-3">
                 <span>Entity</span>
                 <span>Name</span>
                 <span>PredefinedType</span>
                 <span>longName</span>
                 <span>NominalValue</span>
                 <span>LayerThickness</span>
+              </div>
+              <div class="grid grid-col-6 w-full">
+                <div>Entity</div>
+                <div>Name</div>
+                <div>PredefinedType</div>
+                <div>longName</div>
+                <div>NominalValue</div>
+                <div>LayerThickness</div><div>Entity</div>
+                <div>Name</div>
+                <div>PredefinedType</div>
+                <div>longName</div>
+                <div>NominalValue</div>
+                <div>LayerThickness</div><div>Entity</div>
+                <div>Name</div>
+                <div>PredefinedType</div>
+                <div>longName</div>
+                <div>NominalValue</div>
+                <div>LayerThickness</div>
               </div>
               <div v-for="(value, key) in propsListsRef" :key="key">
                 <n-collapse-item :title="value.name">
