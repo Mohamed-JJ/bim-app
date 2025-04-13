@@ -137,7 +137,7 @@
                 </n-checkbox>
               </div>
               <div class="flex gap-2 items-center">
-                <bim-dropdown @change="handleAttributesChange" multiple>
+                <!-- <bim-dropdown @change="handleAttributesChange" multiple>
                   <bim-option label="Name" checked></bim-option>
                   <bim-option label="ContainedInStructure" checked></bim-option>
                   <bim-option label="ForLayerSet"></bim-option>
@@ -152,7 +152,20 @@
                   <bim-option label="Identification"></bim-option>
                   <bim-option label="Prefix"></bim-option>
                   <bim-option label="LongName"></bim-option>
-                </bim-dropdown>
+                </bim-dropdown> -->
+                <n-dropdown trigger="click">
+                  <n-button @click="()=>console.log('hello')">Multiple ({{ selectedOptions.length }})</n-button>
+                  <template #dropdown>
+                    <n-checkbox-group v-model:value="selectedOptions">
+                        <input
+                          v-for="option in dropdownOptions.value"
+                          :key="option.key"
+                          :value="option.key"
+                          :label="option.label"
+                        />
+                    </n-checkbox-group>
+                  </template>
+                </n-dropdown>
                 <n-tooltip trigger="hover">
                   <template #trigger>
                     <n-button @click="copyTableAsTSV">
@@ -189,34 +202,6 @@
                 <span>NominalValue</span>
                 <span>LayerThickness</span>
               </div>
-              <div class="grid grid-col-6 w-full">
-                <div>Entity</div>
-                <div>Name</div>
-                <div>PredefinedType</div>
-                <div>longName</div>
-                <div>NominalValue</div>
-                <div>LayerThickness</div><div>Entity</div>
-                <div>Name</div>
-                <div>PredefinedType</div>
-                <div>longName</div>
-                <div>NominalValue</div>
-                <div>LayerThickness</div><div>Entity</div>
-                <div>Name</div>
-                <div>PredefinedType</div>
-                <div>longName</div>
-                <div>NominalValue</div>
-                <div>LayerThickness</div>
-              </div>
-              <div v-for="(value, key) in propsListsRef" :key="key">
-                <n-collapse-item :title="value.name">
-                  <div v-for="(val, ky) in value.singleValues" :key="ky" class="flex gap-3 w-full h-full">
-                    <span>{{ val.Name.value }}</span>
-                    <span>{{ val.NominalValue.value }}</span>
-                    <span></span>
-                         
-                  </div>
-                </n-collapse-item>
-              </div>
             </n-collapse>
             <div ref="attributesTableContainer"></div>
           </div>
@@ -240,9 +225,12 @@ import {
   NCollapseItem,
   NInput,
   NIcon,
-  NCheckbox,
   NButton,
-  NTooltip
+  NTooltip,
+  NDropdown,
+  NCheckbox,
+  NCheckboxGroup,
+  NSpace
 } from "naive-ui";
 import {
   EyeOffOutline,
@@ -272,6 +260,44 @@ const uiTree = ref([]);
 
 // logic state
 const isProcessed = ref(false);
+
+const dropdownOptions = ref([
+  { label: "Name", key: "Name", props: { checked: true } },
+  {
+    label: "ContainedInStructure",
+    key: "ContainedInStructure",
+    props: { checked: true }
+  },
+  { label: "ForLayerSet", key: "ForLayerSet", props: { checked: false } },
+  { label: "LayerThickness", key: "LayerThickness", props: { checked: false } },
+  { label: "HasProperties", key: "HasProperties", props: { checked: true } },
+  {
+    label: "HasAssociations",
+    key: "HasAssociations",
+    props: { checked: false }
+  },
+  { label: "HasAssignments", key: "HasAssignments", props: { checked: false } },
+  {
+    label: "HasPropertySets",
+    key: "HasPropertySets",
+    props: { checked: true }
+  },
+  { label: "PredefinedType", key: "PredefinedType", props: { checked: false } },
+  { label: "Quantities", key: "Quantities", props: { checked: false } },
+  {
+    label: "ReferencedSource",
+    key: "ReferencedSource",
+    props: { checked: false }
+  },
+  { label: "Identification", key: "Identification", props: { checked: false } },
+  { label: "Prefix", key: "Prefix", props: { checked: false } },
+  { label: "LongName", key: "LongName", props: { checked: false } }
+]);
+const selectedOptions = ref(
+  dropdownOptions.value
+    .filter((option) => option.props.checked)
+    .map((option) => option.key)
+);
 
 // BIM components
 const components = ref(null);
@@ -496,6 +522,29 @@ async function prepareData(model, indexer, node) {
   } catch (error) {}
 }
 
+async function createTree(root, model, indexer, nodes) {
+  const tree = { ...root, hasChildren: true, Children: [] };
+  for (const node of nodes) {
+    let obj = {};
+    if (node.constructor.name === "IfcPropertySet") {
+      const IfcPropertySet = { ...node, hasChildren: true, Children: [] };
+      for (const i of node.HasProperties) {
+        const set = await model.getProperties(i.value);
+        IfcPropertySet.Children.push({
+          ...set,
+          hasChildren: false,
+          Children: []
+        });
+      }
+      obj = { ...IfcPropertySet };
+      // here where the it all ends for a node accting as the last child
+    }
+    tree.Children.push(obj);
+  }
+  console.log("the tree after population", tree);
+  return tree;
+}
+
 // ===============================================================
 // ENTITY ANALYSIS
 // ===============================================================
@@ -533,6 +582,7 @@ async function analyzeEntity(fragmentID) {
   ];
   const UiValues = [];
   const hasRelations = [];
+  const root = await model.getProperties(fragmentID);
   relations.forEach((relationType) => {
     const relations = indexer.getEntityRelations(
       model,
@@ -559,15 +609,8 @@ async function analyzeEntity(fragmentID) {
       // entityProperties.add({ relationType, relationId, properties });
     }
   }
-  for (const meshe of meshes) {
-    const tre = await prepareData(model, indexer, meshe);
-    if (tre) UiValues.push(tre);
-    console.log("tree", tre);
-  }
-  console.log(UiValues);
-  propsListsRef.value = UiValues;
-  propertySets.value = ifcPropertySets;
-  console.log("Property sets:", propertySets.value);
+  const ret = await createTree(root, model, indexer, meshes);
+  uiTree.value = ret;
 }
 
 // ===============================================================
