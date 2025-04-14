@@ -154,18 +154,45 @@
                   <bim-option label="LongName"></bim-option>
                 </bim-dropdown> -->
                 <n-dropdown trigger="click">
-                  <n-button @click="()=>console.log('hello')">Multiple ({{ selectedOptions.length }})</n-button>
+                  <n-button @click="() => console.log('hello')"
+                    >Multiple ({{ selectedOptions.length }})</n-button
+                  >
                   <template #dropdown>
                     <n-checkbox-group v-model:value="selectedOptions">
-                        <input
-                          v-for="option in dropdownOptions.value"
-                          :key="option.key"
-                          :value="option.key"
-                          :label="option.label"
-                        />
+                      <input
+                        v-for="option in dropdownOptions.value"
+                        :key="option.key"
+                        :value="option.key"
+                        :label="option.label"
+                      />
                     </n-checkbox-group>
                   </template>
                 </n-dropdown>
+                <div>
+                  <label class="typo__label">Simple select / dropdown</label>
+                  <multiselect
+                    id="multiselect"
+                    v-model="values"
+                    :options="options"
+                    :multiple="true"
+                    :close-on-select="false"
+                    :clear-on-select="false"
+                    :preserve-search="true"
+                    :placeholder="`Multiple (${values.length})`"
+                    label="name"
+                    track-by="name"
+                    :preselect-first="true"
+                  >
+                    <template #selection="{ values, search, isOpen }">
+                      <span
+                        class="multiselect__single"
+                        v-if="values.length"
+                        v-show="!isOpen"
+                        >{{ values.length }} options selected</span
+                      >
+                    </template>
+                  </multiselect>
+                </div>
                 <n-tooltip trigger="hover">
                   <template #trigger>
                     <n-button @click="copyTableAsTSV">
@@ -220,6 +247,7 @@ import * as OBCF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui";
 import * as BUIC from "@thatopen/ui-obc";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
+import Multiselect from "vue-multiselect";
 import {
   NCollapse,
   NCollapseItem,
@@ -242,6 +270,10 @@ import {
   ChevronForward
 } from "@vicons/ionicons5";
 import { getElementValue } from "@thatopen/ui";
+import "vue-multiselect/dist/vue-multiselect.min.css";
+
+const options = ["list", "of", "options"];
+const values = [];
 
 // ===============================================================
 // STATE MANAGEMENT
