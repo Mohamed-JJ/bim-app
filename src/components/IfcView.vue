@@ -153,42 +153,24 @@
                   <bim-option label="Prefix"></bim-option>
                   <bim-option label="LongName"></bim-option>
                 </bim-dropdown> -->
-                <n-dropdown trigger="click">
-                  <n-button @click="() => console.log('hello')"
-                    >Multiple ({{ selectedOptions.length }})</n-button
-                  >
-                  <template #dropdown>
-                    <n-checkbox-group v-model:value="selectedOptions">
-                      <input
-                        v-for="option in dropdownOptions.value"
-                        :key="option.key"
-                        :value="option.key"
-                        :label="option.label"
-                      />
-                    </n-checkbox-group>
-                  </template>
-                </n-dropdown>
+
                 <div>
-                  <label class="typo__label">Simple select / dropdown</label>
                   <multiselect
                     id="multiselect"
-                    v-model="values"
+                    v-model="value"
                     :options="options"
                     :multiple="true"
                     :close-on-select="false"
                     :clear-on-select="false"
                     :preserve-search="true"
-                    :placeholder="`Multiple (${values.length})`"
+                    placeholder="Pick some"
                     label="name"
                     track-by="name"
                     :preselect-first="true"
                   >
                     <template #selection="{ values, search, isOpen }">
-                      <span
-                        class="multiselect__single"
-                        v-if="values.length"
-                        v-show="!isOpen"
-                        >{{ values.length }} options selected</span
+                      <span class="multiselect__single" v-show="!isOpen"
+                        >Multiple {{ values.length }}</span
                       >
                     </template>
                   </multiselect>
@@ -272,8 +254,29 @@ import {
 import { getElementValue } from "@thatopen/ui";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 
-const options = ["list", "of", "options"];
-const values = [];
+const options = ref([
+  { name: "Name" },
+  { name: "ContainedInStructure" },
+  { name: "ForLayerSet" },
+  { name: "LayerThickness" },
+  { name: "HasProperties" },
+  { name: "HasAssociations" },
+  { name: "HasAssignments" },
+  { name: "HasPropertySets" },
+  { name: "PredefinedType" },
+  { name: "Quantities" },
+  { name: "ReferencedSource" },
+  { name: "Identification" },
+  { name: "Prefix" },
+  { name: "LongName" }
+]);
+
+const value = ref([
+  { name: "Name" },
+  { name: "ContainedInStructure" },
+  { name: "HasProperties" },
+  { name: "HasPropertySets" }
+]);
 
 // ===============================================================
 // STATE MANAGEMENT
@@ -325,11 +328,6 @@ const dropdownOptions = ref([
   { label: "Prefix", key: "Prefix", props: { checked: false } },
   { label: "LongName", key: "LongName", props: { checked: false } }
 ]);
-const selectedOptions = ref(
-  dropdownOptions.value
-    .filter((option) => option.props.checked)
-    .map((option) => option.key)
-);
 
 // BIM components
 const components = ref(null);
