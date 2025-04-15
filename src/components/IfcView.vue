@@ -126,7 +126,7 @@
                   @update:value="handleSearch"
                   type="text"
                   placeholder="Search"
-                  size="small"
+                  size="large"
                 >
                 </n-input>
                 <n-checkbox
@@ -177,7 +177,7 @@
                 </div>
                 <n-tooltip trigger="hover">
                   <template #trigger>
-                    <n-button @click="copyTableAsTSV">
+                    <n-button @click="copyTableAsTSV" size="large">
                       <n-icon size="20">
                         <CopyIcon />
                       </n-icon>
@@ -191,7 +191,7 @@
                 </n-tooltip>
                 <n-tooltip trigger="hover">
                   <template #trigger>
-                    <n-button @click="exportTableAsJSON">
+                    <n-button @click="exportTableAsJSON" size="large">
                       <n-icon size="20">
                         <DownloadIcon />
                       </n-icon>
