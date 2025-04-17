@@ -105,9 +105,7 @@
 
       <!-- Entity Attributes Panel -->
       <div :class="{ hidden: !showEntityPanel }">
-        <div
-          class="absolute top-0 right-0 bg-white rounded-md flex gap-3 p-2"
-        >
+        <div class="absolute top-0 right-0 bg-white rounded-md flex gap-3 p-2">
           <div class="flex flex-col gap-3">
             <div class="flex items-center justify-center gap-3">
               <p class="text-center font-semibold">Entity Attributes</p>
@@ -520,15 +518,21 @@ async function prepareData(model, indexer, node) {
 }
 
 async function createTree(root, model, indexer, nodes) {
-  const tree = { ...root, hasChildren: true, Children: [] };
+  const tree = { ...root, EntityName: root.constructor.name, hasChildren: true, Children: [] };
   for (const node of nodes) {
     let obj = {};
     if (node.constructor.name === "IfcPropertySet") {
-      const IfcPropertySet = { ...node, hasChildren: true, Children: [] };
+      const IfcPropertySet = {
+        ...node,
+        EntityName: node.constructor.name,
+        hasChildren: true,
+        Children: []
+      };
       for (const i of node.HasProperties) {
         const set = await model.getProperties(i.value);
         IfcPropertySet.Children.push({
           ...set,
+          EntityName: set.constructor.name,
           hasChildren: false,
           Children: []
         });
