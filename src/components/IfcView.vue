@@ -106,7 +106,7 @@
       <!-- Entity Attributes Panel -->
       <div :class="{ hidden: !showEntityPanel }">
         <div
-          class="absolute top-0 right-0 bg-white rounded-md flex gap-3 p-2 overflow-auto"
+          class="absolute top-0 right-0 bg-white rounded-md flex gap-3 p-2"
         >
           <div class="flex flex-col gap-3">
             <div class="flex items-center justify-center gap-3">
@@ -137,7 +137,7 @@
                 </n-checkbox>
               </div>
               <div class="flex gap-2 items-center">
-                <!-- <bim-dropdown @change="handleAttributesChange" multiple>
+                <bim-dropdown @change="handleAttributesChange" multiple>
                   <bim-option label="Name" checked></bim-option>
                   <bim-option label="ContainedInStructure" checked></bim-option>
                   <bim-option label="ForLayerSet"></bim-option>
@@ -152,7 +152,7 @@
                   <bim-option label="Identification"></bim-option>
                   <bim-option label="Prefix"></bim-option>
                   <bim-option label="LongName"></bim-option>
-                </bim-dropdown> -->
+                </bim-dropdown>
 
                 <div>
                   <multiselect
@@ -295,39 +295,6 @@ const uiTree = ref([]);
 
 // logic state
 const isProcessed = ref(false);
-
-const dropdownOptions = ref([
-  { label: "Name", key: "Name", props: { checked: true } },
-  {
-    label: "ContainedInStructure",
-    key: "ContainedInStructure",
-    props: { checked: true }
-  },
-  { label: "ForLayerSet", key: "ForLayerSet", props: { checked: false } },
-  { label: "LayerThickness", key: "LayerThickness", props: { checked: false } },
-  { label: "HasProperties", key: "HasProperties", props: { checked: true } },
-  {
-    label: "HasAssociations",
-    key: "HasAssociations",
-    props: { checked: false }
-  },
-  { label: "HasAssignments", key: "HasAssignments", props: { checked: false } },
-  {
-    label: "HasPropertySets",
-    key: "HasPropertySets",
-    props: { checked: true }
-  },
-  { label: "PredefinedType", key: "PredefinedType", props: { checked: false } },
-  { label: "Quantities", key: "Quantities", props: { checked: false } },
-  {
-    label: "ReferencedSource",
-    key: "ReferencedSource",
-    props: { checked: false }
-  },
-  { label: "Identification", key: "Identification", props: { checked: false } },
-  { label: "Prefix", key: "Prefix", props: { checked: false } },
-  { label: "LongName", key: "LongName", props: { checked: false } }
-]);
 
 // BIM components
 const components = ref(null);
