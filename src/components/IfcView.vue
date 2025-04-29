@@ -496,6 +496,13 @@ const exportGLTF = () => {
 // data preparation
 // ===============================================================
 
+/**
+ * 
+ * @deprecated no longer used as we moved on to tree based algorithm to display the nodes in the ui
+ * @param model the model in the scence
+ * @param indexer the indexer instance that will be used to get data from the selected part in the model
+ * @param node the parts of the data that will be used in the ui
+ */
 async function prepareData(model, indexer, node) {
   try {
     if (node.constructor.name === "IfcPropertySet") {
@@ -517,10 +524,22 @@ async function prepareData(model, indexer, node) {
   } catch (error) {}
 }
 
+/**
+ * 
+ * @param root the root of the selected part in the model
+ * @param model the model in the scence
+ * @param indexer the indexer instance that will be used to get data from the selected part in the model
+ * @param nodes the parts of the data that will be used in the ui
+ */
 async function createTree(root, model, indexer, nodes) {
+
+// create the root of the data that will be displayed in the ui
   const tree = { ...root, EntityName: root.constructor.name, hasChildren: true, Children: [] };
+  
+  // looping over the nodes to extract the data and it's accossiated data with in it
   for (const node of nodes) {
     let obj = {};
+
     if (node.constructor.name === "IfcPropertySet") {
       const IfcPropertySet = {
         ...node,
@@ -554,6 +573,7 @@ async function analyzeEntity(fragmentID) {
   console.log("attributes", attributesRef.value);
   const model = lastModel.value;
   const indexer = components.value.get(OBC.IfcRelationsIndexer);
+  // thelist of the relations that might contain data
   const relations = [
     "IsDecomposedBy",
     "Decomposes",
@@ -583,6 +603,8 @@ async function analyzeEntity(fragmentID) {
   ];
   const UiValues = [];
   const hasRelations = [];
+
+  // the root it can be referred to as the most outter node
   const root = await model.getProperties(fragmentID);
   relations.forEach((relationType) => {
     const relations = indexer.getEntityRelations(
