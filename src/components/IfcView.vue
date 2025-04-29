@@ -634,7 +634,7 @@ async function analyzeEntity(fragmentID) {
     }
   }
   const ret = await createTree(root, model, indexer, meshes);
-  uiTree.value = ret;
+  uiTree.value = ret; // assinging the return to the uitree state variable
 }
 
 // ===============================================================
