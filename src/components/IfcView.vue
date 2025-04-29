@@ -607,6 +607,7 @@ async function analyzeEntity(fragmentID) {
   // the root it can be referred to as the most outter node
   const root = await model.getProperties(fragmentID);
   relations.forEach((relationType) => {
+    // extract the relations and see if they have any data in them, if they have push the relationtypein the arryay if not skip to the next iterator
     const relations = indexer.getEntityRelations(
       model,
       fragmentID,
